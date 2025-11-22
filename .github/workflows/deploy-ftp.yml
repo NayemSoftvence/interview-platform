@@ -22,7 +22,7 @@ jobs:
         with:
           server: ftp.zhndev.site
           username: zhndev@test.zhndev.site
-          password: f$d16X%?ZJ}]{K8!
+          password: m*07x;t4OpU7Nbo#
           local-dir: ./
           server-dir: /home/zhndev/test.zhndev.site/
           # server: ${{ secrets.FTP_HOST }}
