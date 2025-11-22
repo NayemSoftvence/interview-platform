@@ -21,7 +21,7 @@ jobs:
         uses: SamKirkland/FTP-Deploy-Action@4.3.0
         with:
           server: ftp.zhndev.site
-          username: zhndev
+          username: zhndev@test.zhndev.site
           password: f$d16X%?ZJ}]{K8!
           local-dir: ./
           server-dir: /home/zhndev/test.zhndev.site/
