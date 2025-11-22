@@ -24,7 +24,7 @@ jobs:
           username: zhndev
           password: f$d16X%?ZJ}]{K8!
           local-dir: ./
-          server-dir: /home/zhndev/
+          server-dir: /home/zhndev/test.zhndev.site/
           # server: ${{ secrets.FTP_HOST }}
           # username: ${{ secrets.FTP_USERNAME }}
           # password: ${{ secrets.FTP_PASSWORD }}
