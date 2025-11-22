@@ -24,7 +24,7 @@ jobs:
           username: zhndev@test.zhndev.site
           password: m*07x;t4OpU7Nbo#
           local-dir: ./
-          server-dir: /home/zhndev/test.zhndev.site/
+          server-dir: /public_html
           # server: ${{ secrets.FTP_HOST }}
           # username: ${{ secrets.FTP_USERNAME }}
           # password: ${{ secrets.FTP_PASSWORD }}
