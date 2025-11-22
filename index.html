@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flutter Mock Interview Platform</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Flutter Mock Interview Platform</h1>
+      <p>Test your Flutter development knowledge</p>
+      <div class="timer" id="timer">30:00</div>
+    </div>
+
+    <div class="content">
+      <!-- Welcome Screen -->
+      <div class="screen active" id="welcomeScreen">
+        <h2>Welcome to the Flutter Mock Interview</h2>
+        <p>
+          This quiz will test your knowledge of Flutter development. The
+          interview will automatically close if you switch tabs or click
+          outside the browser window.
+        </p>
+        <p><strong>Instructions:</strong></p>
+        <ul class="instructions-list">
+          <li>There are multiple-choice questions about Flutter</li>
+          <li>Select one answer for each question</li>
+          <li>You cannot go back to previous questions</li>
+          <li>
+            The interview will close if you switch tabs or click outside
+          </li>
+          <li>Complete the interview within the time limit</li>
+        </ul>
+        <button class="btn" id="studentRegisterBtn">
+          Register for Interview
+        </button>
+        <button class="btn btn-outline" id="adminLoginBtn">
+          Admin Login
+        </button>
+      </div>
+
+      <!-- Student Registration Screen -->
+      <div class="screen" id="studentRegisterScreen">
+        <h2>Student Registration</h2>
+        <div class="student-form">
+          <div class="form-group">
+            <label for="studentName">Full Name *</label>
+            <input type="text" id="studentName" class="form-control" required />
+          </div>
+          <div class="form-group">
+            <label for="studentEmail">Email Address *</label>
+            <input type="email" id="studentEmail" class="form-control" required />
+          </div>
+          <div class="form-group">
+            <label for="studentPhone">Phone Number *</label>
+            <input type="tel" id="studentPhone" class="form-control" required />
+          </div>
+          <button class="btn" id="registerBtn">
+            Register & Start Interview
+          </button>
+          <button class="btn btn-outline" id="backToWelcomeBtn">Back</button>
+          <div id="registrationError" class="error-message"></div>
+        </div>
+      </div>
+
+      <!-- Admin Login Screen -->
+      <div class="screen" id="adminLoginScreen">
+        <h2>Admin Login</h2>
+        <div class="login-form">
+          <div class="form-group">
+            <label for="adminUsername">Username</label>
+            <input type="text" id="adminUsername" class="form-control" required />
+          </div>
+          <div class="form-group">
+            <label for="adminPassword">Password</label>
+            <input type="password" id="adminPassword" class="form-control" required />
+          </div>
+          <button class="btn" id="loginBtn">Login</button>
+          <button class="btn btn-outline" id="backToWelcomeBtn2">Back</button>
+          <div id="loginError" class="error-message"></div>
+        </div>
+      </div>
+
+      <!-- Admin Panel -->
+      <div class="screen" id="adminScreen">
+        <h2>Interview Configuration</h2>
+        <div class="admin-panel">
+          <div id="adminMessage" class="admin-message" role="status" aria-live="polite"></div>
+          <h3>Set Interview Time</h3>
+          <div class="form-group">
+            <label for="interviewTime">Interview Duration (minutes)</label>
+            <input type="number" id="interviewTime" class="form-control" min="5" max="120" value="30" />
+          </div>
+
+          <h3>Manage Questions</h3>
+          <div class="form-group">
+            <label for="questionText">Question</label>
+            <textarea id="questionText" class="form-control" rows="3"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>Options</label>
+            <input type="text" id="option1" class="form-control" placeholder="Option 1" />
+            <input type="text" id="option2" class="form-control" placeholder="Option 2" />
+            <input type="text" id="option3" class="form-control" placeholder="Option 3" />
+            <input type="text" id="option4" class="form-control" placeholder="Option 4" />
+          </div>
+
+          <div class="form-group">
+            <label for="correctAnswer">Correct Answer (1-4)</label>
+            <input type="number" id="correctAnswer" class="form-control" min="1" max="4" value="1" />
+          </div>
+
+          <button class="btn" id="addQuestionBtn">Add Question</button>
+          <button class="btn btn-outline" id="clearQuestionsBtn">
+            Clear All Questions
+          </button>
+
+          <div id="questionsList">
+            <!-- Questions will be listed here -->
+          </div>
+
+          <h3>Student Results</h3>
+          <div class="results-controls">
+            <p>Click on column headers to sort results</p>
+          </div>
+          <div id="resultsTableContainer">
+            <!-- Results table will be populated here -->
+          </div>
+        </div>
+        <button class="btn logout-btn" id="logoutBtn">
+          Logout
+        </button>
+      </div>
+
+      <!-- Quiz Screen -->
+      <div class="screen" id="quizScreen">
+        <div class="question-container">
+          <div class="question-number">
+            Question <span id="currentQuestion">1</span> of
+            <span id="totalQuestions">0</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress" id="progressBar"></div>
+          </div>
+          <div class="question" id="questionTextElement">
+            Loading question...
+          </div>
+        </div>
+
+        <div class="options-container" id="optionsContainer">
+          <!-- Options will be populated by JavaScript -->
+        </div>
+
+        <div class="navigation">
+          <button class="btn" id="prevBtn" disabled>Previous</button>
+          <button class="btn" id="nextBtn">Next</button>
+        </div>
+      </div>
+
+      <!-- Results Screen -->
+      <div class="screen" id="resultsScreen">
+        <h2>Interview Completed!</h2>
+        <p>Your final score:</p>
+        <div class="score" id="finalScore">0/0</div>
+        <p id="resultMessage">Keep practicing to improve your skills!</p>
+        <button class="btn" id="restartBtn">Take Another Interview</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Warning Modal -->
+  <div class="warning-modal" id="warningModal">
+    <div class="warning-content">
+      <h2>Warning!</h2>
+      <p>
+        You have switched tabs or clicked outside the browser window. This is
+        not allowed during the interview.
+      </p>
+      <div class="timer" id="warningTimer">5</div>
+      <p>
+        The interview will close in <span id="countdown">5</span> seconds.
+      </p>
+    </div>
+  </div>
+
+  <script src="js/auth.js"></script>
+  <script src="js/quiz.js"></script>
+  <script src="js/admin.js"></script>
+  <script src="js/app.js"></script>
+</body>
+
+</html>
