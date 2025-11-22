@@ -262,6 +262,41 @@ body {
 .question-item h4 {
     margin-bottom: 10px;
     color: var(--dark);
+
+    .question-item ol {
+        margin: 0 0 8px 18px;
+    }
+
+    .question-item li {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        white-space: normal;
+        margin-bottom: 6px;
+    }
+
+    .question-item li.correct-option {
+        color: green;
+        font-weight: 700;
+    }
+
+    .question-actions button+button {
+        margin-left: 8px;
+    }
+
+    .admin-form-actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-top: 8px;
+    }
+
+    .admin-form-actions .btn {
+        padding: 10px 16px;
+    }
+
+    .admin-form-actions .btn-outline {
+        border-radius: 6px;
+    }
 }
 
 .question-actions {

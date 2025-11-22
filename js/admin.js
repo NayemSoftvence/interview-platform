@@ -21,8 +21,14 @@ async function addQuestion() {
     const correctAnswer = parseInt(document.getElementById('correctAnswer').value);
 
     if (!questionText || !option1 || !option2 || !option3 || !option4) {
-        alert('Please fill in all fields');
+        showAdminMessage('Please fill in all fields', 'error');
         return;
+    }
+
+    // If editing an existing question, delegate to update flow
+    const editingId = document.getElementById('editingQuestionId').value;
+    if (editingId) {
+        return updateQuestion(parseInt(editingId, 10));
     }
 
     try {
@@ -53,6 +59,55 @@ async function addQuestion() {
     } catch (error) {
         showAdminMessage('Error adding question: ' + error.message, 'error');
     }
+}
+
+async function updateQuestion(id) {
+    const questionText = document.getElementById('questionText').value.trim();
+    const option1 = document.getElementById('option1').value.trim();
+    const option2 = document.getElementById('option2').value.trim();
+    const option3 = document.getElementById('option3').value.trim();
+    const option4 = document.getElementById('option4').value.trim();
+    const correctAnswer = parseInt(document.getElementById('correctAnswer').value);
+
+    if (!questionText || !option1 || !option2 || !option3 || !option4) {
+        showAdminMessage('Please fill in all fields', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch('php/questions.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            credentials: 'same-origin',
+            body: `action=update&id=${id}&question=${encodeURIComponent(questionText)}&option1=${encodeURIComponent(option1)}&option2=${encodeURIComponent(option2)}&option3=${encodeURIComponent(option3)}&option4=${encodeURIComponent(option4)}&correct_answer=${correctAnswer}`
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            showAdminMessage('Question updated', 'success');
+            // Clear edit state and form
+            cancelEdit();
+            await renderQuestionsList();
+        } else {
+            showAdminMessage('Error updating question: ' + (result.message || ''), 'error');
+        }
+    } catch (error) {
+        showAdminMessage('Error updating question: ' + error.message, 'error');
+    }
+}
+
+function cancelEdit() {
+    document.getElementById('editingQuestionId').value = '';
+    document.getElementById('questionText').value = '';
+    document.getElementById('option1').value = '';
+    document.getElementById('option2').value = '';
+    document.getElementById('option3').value = '';
+    document.getElementById('option4').value = '';
+    document.getElementById('correctAnswer').value = '1';
+    const cancelBtn = document.getElementById('cancelEditBtn');
+    if (cancelBtn) cancelBtn.style.display = 'none';
+    const addBtn = document.getElementById('addQuestionBtn');
+    if (addBtn) addBtn.textContent = 'Add Question';
 }
 
 async function clearQuestions() {
@@ -142,6 +197,8 @@ async function renderQuestionsList() {
 
     try {
         const questions = await loadQuestionsFromDB();
+        // keep a local copy accessible for edit actions
+        window.adminQuestions = questions;
 
         questionsList.innerHTML = '';
 
@@ -158,10 +215,11 @@ async function renderQuestionsList() {
                 <h4>${index + 1}. ${question.question}</h4>
                 <ol type="A">
                     ${question.options.map((option, i) =>
-                `<li${i === question.correctAnswer ? ' style="color:green;font-weight:bold;"' : ''}>${option}</li>`
+                `<li class="${i === question.correctAnswer ? 'correct-option' : ''}">${option}</li>`
             ).join('')}
                 </ol>
                 <div class="question-actions">
+                    <button class="btn" onclick="editQuestion(${question.id})">Edit</button>
                     <button class="btn" onclick="deleteQuestion(${question.id})">Delete</button>
                 </div>
             `;
@@ -255,4 +313,25 @@ async function renderResultsTable() {
         resultsTableContainer.innerHTML = '<p>Error loading results.</p>';
         console.error('Error rendering results:', error);
     }
+}
+
+function editQuestion(id) {
+    if (!window.adminQuestions) return;
+    const q = window.adminQuestions.find(x => parseInt(x.id, 10) === parseInt(id, 10));
+    if (!q) return showAdminMessage('Question not found', 'error');
+
+    document.getElementById('editingQuestionId').value = q.id;
+    document.getElementById('questionText').value = q.question || '';
+    document.getElementById('option1').value = q.options[0] || '';
+    document.getElementById('option2').value = q.options[1] || '';
+    document.getElementById('option3').value = q.options[2] || '';
+    document.getElementById('option4').value = q.options[3] || '';
+    // correctAnswer stored as zero-based in API; UI expects 1-4
+    document.getElementById('correctAnswer').value = (q.correctAnswer !== undefined) ? (q.correctAnswer + 1) : 1;
+
+    // toggle UI
+    const addBtn = document.getElementById('addQuestionBtn');
+    if (addBtn) addBtn.textContent = 'Update Question';
+    const cancelBtn = document.getElementById('cancelEditBtn');
+    if (cancelBtn) cancelBtn.style.display = 'inline-block';
 }

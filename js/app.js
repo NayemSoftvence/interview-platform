@@ -1,5 +1,5 @@
 // Main application controller
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // Initialize the application
     initApp();
 });
@@ -15,16 +15,18 @@ function setupEventListeners() {
     document.getElementById('adminLoginBtn').addEventListener('click', showAdminLogin);
     document.getElementById('backToWelcomeBtn').addEventListener('click', showWelcomeScreen);
     document.getElementById('backToWelcomeBtn2').addEventListener('click', showWelcomeScreen);
-    
+
     // Student registration
     document.getElementById('registerBtn').addEventListener('click', registerStudent);
-    
+
     // Admin functions
     document.getElementById('loginBtn').addEventListener('click', adminLogin);
     document.getElementById('logoutBtn').addEventListener('click', logout);
     document.getElementById('addQuestionBtn').addEventListener('click', addQuestion);
     document.getElementById('clearQuestionsBtn').addEventListener('click', clearQuestions);
-    
+    const cancelEditBtn = document.getElementById('cancelEditBtn');
+    if (cancelEditBtn) cancelEditBtn.addEventListener('click', cancelEdit);
+
     // Quiz navigation
     document.getElementById('prevBtn').addEventListener('click', showPreviousQuestion);
     document.getElementById('nextBtn').addEventListener('click', showNextQuestion);

@@ -26,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $action = $_POST['action'] ?? '';
 
     // Require admin session for modifying actions
-    if (in_array($action, ['add', 'delete', 'clear_all'])) {
+    if (in_array($action, ['add', 'update', 'delete', 'clear_all'])) {
         if (empty($_SESSION['is_admin']) || $_SESSION['is_admin'] !== true) {
             http_response_code(401);
             echo json_encode(['success' => false, 'message' => 'Unauthorized']);
@@ -86,6 +86,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             echo json_encode(['success' => true]);
         } else {
             echo json_encode(['success' => false, 'message' => 'Failed to clear questions']);
+        }
+
+        $stmt->close();
+        $conn->close();
+    } elseif ($action === 'update') {
+        $id = $_POST['id'] ?? 0;
+        $question = $_POST['question'] ?? '';
+        $option1 = $_POST['option1'] ?? '';
+        $option2 = $_POST['option2'] ?? '';
+        $option3 = $_POST['option3'] ?? '';
+        $option4 = $_POST['option4'] ?? '';
+        $correct_answer = $_POST['correct_answer'] ?? 1;
+
+        if (empty($id) || empty($question) || empty($option1) || empty($option2) || empty($option3) || empty($option4)) {
+            echo json_encode(['success' => false, 'message' => 'All fields are required']);
+            exit;
+        }
+
+        $conn = getDBConnection();
+        $stmt = $conn->prepare("UPDATE questions SET question = ?, option1 = ?, option2 = ?, option3 = ?, option4 = ?, correct_answer = ? WHERE id = ?");
+        $stmt->bind_param("sssssii", $question, $option1, $option2, $option3, $option4, $correct_answer, $id);
+
+        if ($stmt->execute()) {
+            echo json_encode(['success' => true]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to update question']);
         }
 
         $stmt->close();

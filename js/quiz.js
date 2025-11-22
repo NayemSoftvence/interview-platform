@@ -11,6 +11,11 @@ let quizState = {
     focusLost: false
 };
 
+// runtime flags to prevent duplicate submission
+quizState.ended = false;
+quizState.saving = false;
+
+
 // Start the interview
 async function startInterview() {
     try {
@@ -25,6 +30,8 @@ async function startInterview() {
 
         quizState.currentQuestionIndex = 0;
         quizState.userAnswers = [];
+        quizState.ended = false;
+        quizState.saving = false;
 
         // Set time limit (read from admin input if available)
         const timeEl = document.getElementById('interviewTime');
@@ -196,6 +203,14 @@ function showNextQuestion() {
 }
 
 async function endInterview() {
+    // make endInterview idempotent to avoid duplicate saves
+    if (quizState.ended) return;
+    quizState.ended = true;
+
+    // prevent concurrent save attempts
+    if (quizState.saving) return;
+    quizState.saving = true;
+
     // Clear intervals
     clearInterval(quizState.timerInterval);
     clearInterval(quizState.warningInterval);
@@ -256,6 +271,12 @@ function restartInterview() {
     document.getElementById('studentName').value = '';
     document.getElementById('studentEmail').value = '';
     document.getElementById('studentPhone').value = '';
+
+    // Reset runtime flags and timers
+    clearInterval(quizState.timerInterval);
+    clearInterval(quizState.warningInterval);
+    quizState.ended = false;
+    quizState.saving = false;
 
     showWelcomeScreen();
 }
