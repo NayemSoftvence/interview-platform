@@ -33,15 +33,9 @@ async function startInterview() {
         quizState.ended = false;
         quizState.saving = false;
 
-        // Set time limit (read from admin input if available, or localStorage, otherwise default to 30)
-        const timeEl = document.getElementById('interviewTime');
-        let interviewTime = timeEl ? parseInt(timeEl.value, 10) : null;
-
-        if (!interviewTime || isNaN(interviewTime)) {
-            // Try to use saved admin setting from localStorage
-            interviewTime = localStorage.getItem('adminInterviewTime');
-            interviewTime = interviewTime ? parseInt(interviewTime, 10) : 30;
-        }
+        // Set time limit: use localStorage (admin-saved setting), otherwise default to 30
+        let interviewTime = localStorage.getItem('adminInterviewTime');
+        interviewTime = interviewTime ? parseInt(interviewTime, 10) : 30;
 
         quizState.timeLeft = interviewTime * 60; // Convert to seconds
 

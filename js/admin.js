@@ -416,10 +416,8 @@ function saveInterviewTime() {
 function initializeAdminPanel() {
     const interviewTimeInput = document.getElementById('interviewTime');
     if (interviewTimeInput) {
-        // Load saved interview time from localStorage
-        const savedTime = localStorage.getItem('adminInterviewTime');
-        if (savedTime) {
-            interviewTimeInput.value = savedTime;
-        }
+        // Load saved interview time from localStorage, default to 30 if not set
+        const savedTime = localStorage.getItem('adminInterviewTime') || '30';
+        interviewTimeInput.value = savedTime;
     }
 }

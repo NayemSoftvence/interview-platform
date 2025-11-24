@@ -88,9 +88,13 @@ function logout() {
         credentials: 'same-origin',
         body: 'action=logout'
     }).catch(err => console.warn('Logout request failed', err)).finally(() => {
-        showWelcomeScreen();
         // Clear admin login form
-        document.getElementById('adminUsername').value = '';
-        document.getElementById('adminPassword').value = '';
+        const adminUsername = document.getElementById('adminUsername');
+        const adminPassword = document.getElementById('adminPassword');
+        if (adminUsername) adminUsername.value = '';
+        if (adminPassword) adminPassword.value = '';
+        
+        // Redirect to admin login page (admin.html)
+        window.location.href = 'admin.html';
     });
 }
