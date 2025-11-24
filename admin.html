@@ -2,111 +2,117 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin Portal - Flutter Mock Interview Platform</title>
-  <link rel="stylesheet" href="css/style.css" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Portal - Flutter Mock Interview Platform</title>
+    <link rel="stylesheet" href="css/style.css" />
 </head>
 
 <body>
-  <div class="container">
-    <div class="header">
-      <h1>Admin Portal</h1>
-      <p>Manage interview questions and results</p>
+    <div class="container">
+        <div class="header">
+            <h1>Admin Portal</h1>
+            <p>Manage interview questions and results</p>
+        </div>
+
+        <div class="content">
+            <!-- Admin Login Screen -->
+            <div class="screen active" id="adminLoginScreen">
+                <h2>Admin Login</h2>
+                <div class="login-form">
+                    <div class="form-group">
+                        <label for="adminUsername">Username</label>
+                        <input type="text" id="adminUsername" class="form-control" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="adminPassword">Password</label>
+                        <input type="password" id="adminPassword" class="form-control" required />
+                    </div>
+                    <button class="btn" id="loginBtn">Login</button>
+                    <a href="index.html" class="btn btn-outline"
+                        style="text-align: center; text-decoration: none; display: inline-block;">Back to Main</a>
+                    <div id="loginError" class="error-message"></div>
+                </div>
+            </div>
+
+            <!-- Admin Panel -->
+            <div class="screen" id="adminScreen">
+                <h2>Interview Configuration</h2>
+                <div class="admin-panel">
+                    <div id="adminMessage" class="admin-message" role="status" aria-live="polite"></div>
+                    <div class="admin-section">
+                        <h3>Set Interview Time</h3>
+                        <div class="form-group">
+                            <label for="interviewTime">Interview Duration (minutes)</label>
+                            <div class="input-group">
+                                <input type="number" id="interviewTime" class="form-control" min="5" max="120" />
+                                <button class="btn btn-sm" id="saveInterviewTimeBtn">Save</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="admin-section">
+                        <h3>Manage Questions</h3>
+
+                        <div class="admin-subsection">
+                            <h4>Bulk Import Questions (JSON)</h4>
+                            <div class="form-group">
+                                <label for="bulkUploadFile">Select JSON File</label>
+                                <input type="file" id="bulkUploadFile" accept=".json" class="form-control" />
+                                <p class="help-text">Upload a JSON file with questions array. <a
+                                        href="sample_questions.json" target="_blank">View sample format</a></p>
+                            </div>
+                            <button class="btn btn-primary" id="bulkUploadBtn">Import Questions</button>
+                        </div>
+
+                        <div class="admin-subsection">
+                            <h4>Add New Question</h4>
+                            <input type="hidden" id="editingQuestionId" value="" />
+                            <div class="form-group">
+                                <label for="questionText">Question</label>
+                                <textarea id="questionText" class="form-control" rows="3"
+                                    placeholder="Enter the question text..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Options</label>
+                                <input type="text" id="option1" class="form-control" placeholder="Option A" />
+                                <input type="text" id="option2" class="form-control" placeholder="Option B" />
+                                <input type="text" id="option3" class="form-control" placeholder="Option C" />
+                                <input type="text" id="option4" class="form-control" placeholder="Option D" />
+                            </div>
+                            <div class="form-group">
+                                <label for="correctAnswer">Correct Answer (0-3)</label>
+                                <input type="number" id="correctAnswer" class="form-control" min="0" max="3"
+                                    value="0" />
+                            </div>
+                            <button class="btn btn-primary" id="addQuestionBtn">Add Question</button>
+                            <button class="btn btn-outline" id="cancelEditBtn" style="display: none;">Cancel
+                                Edit</button>
+                        </div>
+
+                        <div class="admin-subsection">
+                            <h4>Questions List</h4>
+                            <div id="questionsList" class="questions-display"></div>
+                            <button class="btn btn-danger-outline" id="clearQuestionsBtn">Clear All Questions</button>
+                        </div>
+                    </div>
+
+                    <div class="admin-section">
+                        <h3>Interview Results</h3>
+                        <table id="resultsTable" class="results-table"></table>
+                        <button class="btn btn-danger-outline" id="clearResultsBtn">Clear All Results</button>
+                    </div>
+
+                    <button class="btn btn-outline" id="logoutBtn"
+                        style="margin-top: 20px; width: 100%;">Logout</button>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div class="content">
-      <!-- Admin Login Screen -->
-      <div class="screen active" id="adminLoginScreen">
-        <h2>Admin Login</h2>
-        <div class="login-form">
-          <div class="form-group">
-            <label for="adminUsername">Username</label>
-            <input type="text" id="adminUsername" class="form-control" required />
-          </div>
-          <div class="form-group">
-            <label for="adminPassword">Password</label>
-            <input type="password" id="adminPassword" class="form-control" required />
-          </div>
-          <button class="btn" id="loginBtn">Login</button>
-          <a href="index.html" class="btn btn-outline" style="text-align: center; text-decoration: none; display: inline-block;">Back to Main</a>
-          <div id="loginError" class="error-message"></div>
-        </div>
-      </div>
-
-      <!-- Admin Panel -->
-      <div class="screen" id="adminScreen">
-        <h2>Interview Configuration</h2>
-        <div class="admin-panel">
-          <div id="adminMessage" class="admin-message" role="status" aria-live="polite"></div>
-          <div class="admin-section">
-            <h3>Set Interview Time</h3>
-            <div class="form-group">
-              <label for="interviewTime">Interview Duration (minutes)</label>
-              <div class="input-group">
-                <input type="number" id="interviewTime" class="form-control" min="5" max="120" />
-                <button class="btn btn-sm" id="saveInterviewTimeBtn">Save</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="admin-section">
-            <h3>Manage Questions</h3>
-            
-            <div class="admin-subsection">
-              <h4>Bulk Import Questions (JSON)</h4>
-              <div class="form-group">
-                <label for="bulkUploadFile">Select JSON File</label>
-                <input type="file" id="bulkUploadFile" accept=".json" class="form-control" />
-                <p class="help-text">Upload a JSON file with questions array. <a href="sample_questions.json" target="_blank">View sample format</a></p>
-              </div>
-              <button class="btn btn-primary" id="bulkUploadBtn">Import Questions</button>
-            </div>
-
-            <div class="admin-subsection">
-              <h4>Add New Question</h4>
-              <input type="hidden" id="editingQuestionId" value="" />
-              <div class="form-group">
-                <label for="questionText">Question</label>
-                <textarea id="questionText" class="form-control" rows="3" placeholder="Enter the question text..."></textarea>
-              </div>
-              <div class="form-group">
-                <label>Options</label>
-                <input type="text" id="option1" class="form-control" placeholder="Option A" />
-                <input type="text" id="option2" class="form-control" placeholder="Option B" />
-                <input type="text" id="option3" class="form-control" placeholder="Option C" />
-                <input type="text" id="option4" class="form-control" placeholder="Option D" />
-              </div>
-              <div class="form-group">
-                <label for="correctAnswer">Correct Answer (0-3)</label>
-                <input type="number" id="correctAnswer" class="form-control" min="0" max="3" value="0" />
-              </div>
-              <button class="btn btn-primary" id="addQuestionBtn">Add Question</button>
-              <button class="btn btn-outline" id="cancelEditBtn" style="display: none;">Cancel Edit</button>
-            </div>
-
-            <div class="admin-subsection">
-              <h4>Questions List</h4>
-              <div id="questionsList" class="questions-display"></div>
-              <button class="btn btn-danger-outline" id="clearQuestionsBtn">Clear All Questions</button>
-            </div>
-          </div>
-
-          <div class="admin-section">
-            <h3>Interview Results</h3>
-            <table id="resultsTable" class="results-table"></table>
-            <button class="btn btn-danger-outline" id="clearResultsBtn">Clear All Results</button>
-          </div>
-
-          <button class="btn btn-outline" id="logoutBtn" style="margin-top: 20px; width: 100%;">Logout</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script src="js/auth.js"></script>
-  <script src="js/admin.js"></script>
-  <script src="js/app.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/admin.js"></script>
+    <script src="js/app.js"></script>
 </body>
 
 </html>

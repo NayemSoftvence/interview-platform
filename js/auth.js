@@ -93,7 +93,7 @@ function logout() {
         const adminPassword = document.getElementById('adminPassword');
         if (adminUsername) adminUsername.value = '';
         if (adminPassword) adminPassword.value = '';
-        
+
         // Redirect to admin login page (admin.html)
         window.location.href = 'admin.html';
     });
