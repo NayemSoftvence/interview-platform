@@ -15,6 +15,13 @@ let quizState = {
 quizState.ended = false;
 quizState.saving = false;
 
+// Listen for interview time updates from admin window
+window.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'update-interview-time') {
+        // Update localStorage with new time
+        localStorage.setItem('adminInterviewTime', event.data.value);
+    }
+});
 
 // Start the interview
 async function startInterview() {
@@ -249,6 +256,9 @@ async function endInterview() {
     } catch (error) {
         console.error('Error saving results:', error);
     }
+
+    // Close warning modal if it's open
+    hideWarningModal();
 
     // Display results
     document.getElementById('finalScore').textContent = `${score}/${totalQuestions}`;

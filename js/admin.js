@@ -410,6 +410,11 @@ function saveInterviewTime() {
     // Store in localStorage for persistence across sessions
     localStorage.setItem('adminInterviewTime', value);
     showAdminMessage(`Interview time set to ${value} minutes`, 'success');
+    
+    // Also update timer display on any open main window/tab
+    if (window.opener && !window.opener.closed) {
+        window.opener.postMessage({ type: 'update-interview-time', value: value }, '*');
+    }
 }
 
 // Initialize admin panel with saved settings

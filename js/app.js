@@ -46,8 +46,6 @@ function setupEventListeners() {
     if (prevBtn) prevBtn.addEventListener('click', showPreviousQuestion);
     const nextBtn = document.getElementById('nextBtn');
     if (nextBtn) nextBtn.addEventListener('click', showNextQuestion);
-    const restartBtn = document.getElementById('restartBtn');
-    if (restartBtn) restartBtn.addEventListener('click', restartInterview);
 }
 
 // Screen management

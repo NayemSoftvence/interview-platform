@@ -39,6 +39,9 @@ body {
     padding: 20px;
     text-align: center;
     position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .header h1 {
@@ -51,10 +54,16 @@ body {
     opacity: 0.9;
 }
 
-.timer {
+.header-right {
     position: absolute;
     top: 20px;
     right: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.timer {
     background: rgba(255, 255, 255, 0.2);
     padding: 8px 15px;
     border-radius: 20px;
@@ -575,9 +584,6 @@ body {
 
 /* Admin icon button in header */
 .admin-icon-btn {
-    position: absolute;
-    top: 20px;
-    right: 20px;
     font-size: 24px;
     text-decoration: none;
     background: rgba(255, 255, 255, 0.2);
@@ -589,6 +595,7 @@ body {
     justify-content: center;
     transition: all 0.2s ease;
     cursor: pointer;
+    flex-shrink: 0;
 }
 
 .admin-icon-btn:hover {
@@ -597,11 +604,18 @@ body {
 }
 
 @media (max-width: 768px) {
+    .header-right {
+        gap: 10px;
+    }
+
     .admin-icon-btn {
         font-size: 20px;
         width: 40px;
         height: 40px;
-        top: 15px;
-        right: 15px;
+    }
+
+    .timer {
+        font-size: 14px;
+        padding: 6px 12px;
     }
 }
