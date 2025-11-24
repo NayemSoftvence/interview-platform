@@ -409,11 +409,14 @@ function saveInterviewTime() {
 
     // Store in localStorage for persistence across sessions
     localStorage.setItem('adminInterviewTime', value);
-    showAdminMessage(`Interview time set to ${value} minutes`, 'success');
-    
-    // Also update timer display on any open main window/tab
-    if (window.opener && !window.opener.closed) {
-        window.opener.postMessage({ type: 'update-interview-time', value: value }, '*');
+    showAdminMessage('Interview time updated', 'success');
+
+    // Broadcast update to all open windows/tabs using storage event
+    // This will trigger storage listener in any open index.html pages
+    try {
+        window.opener?.postMessage({ type: 'update-interview-time', value: value }, '*');
+    } catch (e) {
+        // Silently fail if no opener
     }
 }
 

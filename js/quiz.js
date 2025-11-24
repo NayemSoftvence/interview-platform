@@ -20,6 +20,23 @@ window.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'update-interview-time') {
         // Update localStorage with new time
         localStorage.setItem('adminInterviewTime', event.data.value);
+        // Update timer display if on main page
+        const timerEl = document.getElementById('timer');
+        if (timerEl && !quizState.timerInterval) {
+            // Only update if quiz hasn't started
+            timerEl.textContent = `${event.data.value.toString().padStart(2, '0')}:00`;
+        }
+    }
+});
+
+// Listen for localStorage changes (cross-tab communication)
+window.addEventListener('storage', (event) => {
+    if (event.key === 'adminInterviewTime' && event.newValue) {
+        const timerEl = document.getElementById('timer');
+        if (timerEl && !quizState.timerInterval) {
+            // Only update if quiz hasn't started
+            timerEl.textContent = `${event.newValue.toString().padStart(2, '0')}:00`;
+        }
     }
 });
 

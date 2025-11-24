@@ -5,9 +5,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Initialize login form if on admin page
     initLoginForm();
+
+    // Initialize timer display with default or saved time
+    initializeTimerDisplay();
 });
 
-function initApp() {
+function initializeTimerDisplay() {
+    const timerEl = document.getElementById('timer');
+    if (timerEl) {
+        // Get saved time or default to 30 minutes
+        const savedTime = localStorage.getItem('adminInterviewTime') || '30';
+        const minutes = parseInt(savedTime, 10);
+        timerEl.textContent = `${minutes.toString().padStart(2, '0')}:00`;
+    }
+} function initApp() {
     // Set up event listeners
     setupEventListeners();
 }
@@ -55,6 +66,12 @@ function showScreen(screenId) {
         screen.classList.remove('active');
     });
     document.getElementById(screenId).classList.add('active');
+
+    // Show admin icon only on welcome screen
+    const adminIcon = document.querySelector('.admin-icon-btn');
+    if (adminIcon) {
+        adminIcon.style.display = screenId === 'welcomeScreen' ? 'flex' : 'none';
+    }
 }
 
 function showWelcomeScreen() {
