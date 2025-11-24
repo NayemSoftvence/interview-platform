@@ -49,8 +49,14 @@ function isValidEmail(email) {
 
 // Admin login
 function adminLogin() {
-    const username = document.getElementById('adminUsername').value;
-    const password = document.getElementById('adminPassword').value;
+    const username = document.getElementById('adminUsername').value.trim();
+    const password = document.getElementById('adminPassword').value.trim();
+
+    // Validate inputs
+    if (!username || !password) {
+        document.getElementById('loginError').textContent = 'Please enter username and password';
+        return;
+    }
 
     // Call server-side admin authentication
     fetch('php/admin_auth.php', {
@@ -59,8 +65,14 @@ function adminLogin() {
         credentials: 'same-origin',
         body: `action=login&username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
     })
-        .then(res => res.json())
+        .then(res => {
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            return res.json();
+        })
         .then(result => {
+            console.log('Login response:', result);
             if (result.success) {
                 showAdminPanel();
             } else {
@@ -97,4 +109,18 @@ function logout() {
         // Redirect to admin login page (admin.html)
         window.location.href = 'admin.html';
     });
+}
+
+// Initialize login form keyboard support
+function initLoginForm() {
+    const passwordInput = document.getElementById('adminPassword');
+
+    if (passwordInput) {
+        // Allow Enter key to submit login
+        passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                adminLogin();
+            }
+        });
+    }
 }

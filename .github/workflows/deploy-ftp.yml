@@ -24,11 +24,6 @@ jobs:
           username: zhndev@test.zhndev.site
           password: m*07x;t4OpU7Nbo#
           local-dir: ./
-          server-dir: /test.zhndev.site/
-          # server: ${{ secrets.FTP_HOST }}
-          # username: ${{ secrets.FTP_USERNAME }}
-          # password: ${{ secrets.FTP_PASSWORD }}
-          # local-dir: ./
-          # server-dir: ${{ secrets.FTP_TARGET }}
+          server-dir: /home/zhndev/test.zhndev.site
           # optional: exclude GitHub workflow files from upload
           exclude: ".git/**,.github/**,.gitignore"

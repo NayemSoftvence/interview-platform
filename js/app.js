@@ -2,6 +2,9 @@
 document.addEventListener('DOMContentLoaded', function () {
     // Initialize the application
     initApp();
+
+    // Initialize login form if on admin page
+    initLoginForm();
 });
 
 function initApp() {
@@ -10,12 +13,15 @@ function initApp() {
 }
 
 function setupEventListeners() {
-    // Navigation buttons
-    document.getElementById('studentRegisterBtn').addEventListener('click', showStudentRegister);
-    document.getElementById('backToWelcomeBtn').addEventListener('click', showWelcomeScreen);
+    // Navigation buttons (only on index.html)
+    const studentRegisterBtn = document.getElementById('studentRegisterBtn');
+    if (studentRegisterBtn) studentRegisterBtn.addEventListener('click', showStudentRegister);
+    const backToWelcomeBtn = document.getElementById('backToWelcomeBtn');
+    if (backToWelcomeBtn) backToWelcomeBtn.addEventListener('click', showWelcomeScreen);
 
-    // Student registration
-    document.getElementById('registerBtn').addEventListener('click', registerStudent);
+    // Student registration (only on index.html)
+    const registerBtn = document.getElementById('registerBtn');
+    if (registerBtn) registerBtn.addEventListener('click', registerStudent);
 
     // Admin functions (for admin.html page)
     const loginBtn = document.getElementById('loginBtn');
@@ -35,10 +41,13 @@ function setupEventListeners() {
     const clearResultsBtn = document.getElementById('clearResultsBtn');
     if (clearResultsBtn) clearResultsBtn.addEventListener('click', clearResults);
 
-    // Quiz navigation
-    document.getElementById('prevBtn').addEventListener('click', showPreviousQuestion);
-    document.getElementById('nextBtn').addEventListener('click', showNextQuestion);
-    document.getElementById('restartBtn').addEventListener('click', restartInterview);
+    // Quiz navigation (only on index.html)
+    const prevBtn = document.getElementById('prevBtn');
+    if (prevBtn) prevBtn.addEventListener('click', showPreviousQuestion);
+    const nextBtn = document.getElementById('nextBtn');
+    if (nextBtn) nextBtn.addEventListener('click', showNextQuestion);
+    const restartBtn = document.getElementById('restartBtn');
+    if (restartBtn) restartBtn.addEventListener('click', restartInterview);
 }
 
 // Screen management
