@@ -75,6 +75,7 @@ function adminLogin() {
 
 function showAdminPanel() {
     showScreen('adminScreen');
+    initializeAdminPanel();
     renderQuestionsList();
     renderResultsTable();
 }

@@ -335,3 +335,91 @@ function editQuestion(id) {
     const cancelBtn = document.getElementById('cancelEditBtn');
     if (cancelBtn) cancelBtn.style.display = 'inline-block';
 }
+
+async function bulkUploadQuestions() {
+    const fileInput = document.getElementById('bulkUploadFile');
+    if (!fileInput.files || fileInput.files.length === 0) {
+        showAdminMessage('Please select a JSON file', 'error');
+        return;
+    }
+
+    const file = fileInput.files[0];
+    if (file.type !== 'application/json' && !file.name.endsWith('.json')) {
+        showAdminMessage('Please upload a valid JSON file', 'error');
+        return;
+    }
+
+    // Read and parse JSON file
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (!Array.isArray(data.questions) || data.questions.length === 0) {
+                showAdminMessage('Invalid JSON format. Expected { "questions": [...] }', 'error');
+                return;
+            }
+
+            // Validate each question
+            for (const q of data.questions) {
+                if (!q.question || !Array.isArray(q.options) || q.options.length !== 4 || q.correctAnswer === undefined) {
+                    showAdminMessage('Invalid question format. Each must have: question, options (4 items), correctAnswer', 'error');
+                    return;
+                }
+            }
+
+            // Send to server for bulk insert
+            const response = await fetch('php/questions.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({ action: 'bulk_add', questions: data.questions })
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                showAdminMessage(`Successfully imported ${result.count} questions!`, 'success');
+                fileInput.value = '';
+                await renderQuestionsList();
+            } else {
+                showAdminMessage('Error: ' + (result.message || 'Failed to import questions'), 'error');
+            }
+        } catch (error) {
+            showAdminMessage('Error parsing JSON: ' + error.message, 'error');
+        }
+    };
+    reader.onerror = () => {
+        showAdminMessage('Error reading file', 'error');
+    };
+    reader.readAsText(file);
+}
+
+// Save interview time handler
+function saveInterviewTime() {
+    const interviewTimeInput = document.getElementById('interviewTime');
+    if (!interviewTimeInput) return;
+
+    const value = parseInt(interviewTimeInput.value, 10);
+
+    // Validate input
+    if (isNaN(value) || value < 5 || value > 120) {
+        showAdminMessage('Interview time must be between 5 and 120 minutes', 'error');
+        interviewTimeInput.value = '';
+        return;
+    }
+
+    // Store in localStorage for persistence across sessions
+    localStorage.setItem('adminInterviewTime', value);
+    showAdminMessage(`Interview time set to ${value} minutes`, 'success');
+}
+
+// Initialize admin panel with saved settings
+function initializeAdminPanel() {
+    const interviewTimeInput = document.getElementById('interviewTime');
+    if (interviewTimeInput) {
+        // Load saved interview time from localStorage
+        const savedTime = localStorage.getItem('adminInterviewTime');
+        if (savedTime) {
+            interviewTimeInput.value = savedTime;
+        }
+    }
+}

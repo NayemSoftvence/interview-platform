@@ -1,0 +1,54 @@
+{
+    "questions": [
+        {
+            "question": "What is the primary use of Flutter?",
+            "options": [
+                "Building web applications",
+                "Building cross-platform mobile applications",
+                "Building backend services",
+                "Building machine learning models"
+            ],
+            "correctAnswer": 1
+        },
+        {
+            "question": "Which of the following is a stateless widget in Flutter?",
+            "options": [
+                "Scaffold",
+                "Container",
+                "Text",
+                "StreamBuilder"
+            ],
+            "correctAnswer": 2
+        },
+        {
+            "question": "What is the purpose of the 'build' method in a widget?",
+            "options": [
+                "Initialize the widget state",
+                "Build the UI tree",
+                "Handle user interactions",
+                "Dispose resources"
+            ],
+            "correctAnswer": 1
+        },
+        {
+            "question": "How do you manage state in a StatefulWidget?",
+            "options": [
+                "Using the 'build' method",
+                "Using the 'setState' method",
+                "Using the 'init' method",
+                "Using the 'dispose' method"
+            ],
+            "correctAnswer": 1
+        },
+        {
+            "question": "What does 'Hot Reload' do in Flutter?",
+            "options": [
+                "Recompiles the entire app",
+                "Restarts the app from scratch",
+                "Injects code changes and preserves app state",
+                "Clears all cached data"
+            ],
+            "correctAnswer": 2
+        }
+    ]
+}

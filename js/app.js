@@ -24,8 +24,12 @@ function setupEventListeners() {
     document.getElementById('logoutBtn').addEventListener('click', logout);
     document.getElementById('addQuestionBtn').addEventListener('click', addQuestion);
     document.getElementById('clearQuestionsBtn').addEventListener('click', clearQuestions);
+    const bulkUploadBtn = document.getElementById('bulkUploadBtn');
+    if (bulkUploadBtn) bulkUploadBtn.addEventListener('click', bulkUploadQuestions);
     const cancelEditBtn = document.getElementById('cancelEditBtn');
     if (cancelEditBtn) cancelEditBtn.addEventListener('click', cancelEdit);
+    const saveInterviewTimeBtn = document.getElementById('saveInterviewTimeBtn');
+    if (saveInterviewTimeBtn) saveInterviewTimeBtn.addEventListener('click', saveInterviewTime);
 
     // Quiz navigation
     document.getElementById('prevBtn').addEventListener('click', showPreviousQuestion);
