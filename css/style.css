@@ -20,7 +20,7 @@ body {
     min-height: 100vh;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
     padding: 20px;
 }
 
@@ -30,7 +30,7 @@ body {
     background-color: white;
     border-radius: 15px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-    overflow: hidden;
+    overflow: auto;
     display: flex;
     flex-direction: column;
     max-height: 90vh;
@@ -81,6 +81,13 @@ body {
     overflow-y: auto;
     display: flex;
     flex-direction: column;
+}
+
+/* allow flex children to shrink and enable internal scrolling */
+.content,
+.admin-content,
+.admin-dashboard {
+    min-height: 0;
 }
 
 .screen {
@@ -1019,6 +1026,7 @@ body {
 
     .dashboard-stats,
     .dashboard-quick-actions {
+        display: grid;
         grid-template-columns: 1fr;
     }
 
