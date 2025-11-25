@@ -15,7 +15,7 @@
             <p>Manage interview questions and results</p>
         </div>
 
-        <div class="content">
+        <div class="content admin-dashboard">
             <!-- Admin Login Screen -->
             <div class="screen active" id="adminLoginScreen">
                 <h2>Admin Login</h2>
@@ -35,75 +35,161 @@
                 </div>
             </div>
 
-            <!-- Admin Panel -->
+            <!-- Admin Dashboard -->
             <div class="screen" id="adminScreen">
-                <h2>Interview Configuration</h2>
-                <div class="admin-panel">
+                <div class="admin-sidebar">
+                    <div class="admin-logo">
+                        <h3>Admin Dashboard</h3>
+                    </div>
+                    <nav class="admin-nav">
+                        <a href="#" class="nav-item active" data-screen="dashboardHome">
+                            <span class="nav-icon">📊</span>
+                            <span>Dashboard</span>
+                        </a>
+                        <a href="#" class="nav-item" data-screen="settingsScreen">
+                            <span class="nav-icon">⏱️</span>
+                            <span>Settings</span>
+                        </a>
+                        <a href="#" class="nav-item" data-screen="questionsScreen">
+                            <span class="nav-icon">❓</span>
+                            <span>Questions</span>
+                        </a>
+                        <a href="#" class="nav-item" data-screen="resultsScreen">
+                            <span class="nav-icon">📈</span>
+                            <span>Results</span>
+                        </a>
+                    </nav>
+                    <button class="btn btn-outline logout-btn" id="logoutBtn">Logout</button>
+                </div>
+
+                <div class="admin-content">
                     <div id="adminMessage" class="admin-message" role="status" aria-live="polite"></div>
-                    <div class="admin-section">
-                        <h3>Set Interview Time</h3>
-                        <div class="form-group">
-                            <label for="interviewTime">Interview Duration (minutes)</label>
-                            <div class="input-group">
-                                <input type="number" id="interviewTime" class="form-control" min="5" max="120" />
-                                <button class="btn btn-sm" id="saveInterviewTimeBtn">Save</button>
+
+                    <!-- Dashboard Home Screen -->
+                    <div class="admin-screen active" id="dashboardHome">
+                        <h2>Dashboard Overview</h2>
+                        <div class="dashboard-stats">
+                            <div class="stat-card">
+                                <div class="stat-label">Total Questions</div>
+                                <div class="stat-value" id="totalQuestionsCount">0</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Interview Duration</div>
+                                <div class="stat-value" id="currentDurationDisplay">--</div>
+                                <span class="stat-unit">minutes</span>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Total Results</div>
+                                <div class="stat-value" id="totalResultsCount">0</div>
+                            </div>
+                        </div>
+                        <div class="dashboard-quick-actions">
+                            <button class="quick-action-btn" onclick="switchAdminScreen('settingsScreen')">
+                                <span>⚙️</span>
+                                Configure Settings
+                            </button>
+                            <button class="quick-action-btn" onclick="switchAdminScreen('questionsScreen')">
+                                <span>➕</span>
+                                Manage Questions
+                            </button>
+                            <button class="quick-action-btn" onclick="switchAdminScreen('resultsScreen')">
+                                <span>📊</span>
+                                View Results
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Settings Screen -->
+                    <div class="admin-screen" id="settingsScreen">
+                        <h2>Interview Settings</h2>
+                        <div class="admin-form-container">
+                            <div class="form-section">
+                                <h3>Interview Duration</h3>
+                                <div class="form-group">
+                                    <label for="interviewTime">Interview Duration (minutes)</label>
+                                    <div class="input-group">
+                                        <input type="number" id="interviewTime" class="form-control" min="5"
+                                            max="120" />
+                                        <button class="btn btn-sm" id="saveInterviewTimeBtn">Save</button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="admin-section">
-                        <h3>Manage Questions</h3>
+                    <!-- Questions Screen -->
+                    <div class="admin-screen" id="questionsScreen">
+                        <h2>Manage Questions</h2>
+                        <div class="questions-section">
+                            <div class="section-tabs">
+                                <button class="tab-btn active" data-tab="addQuestion">Add Question</button>
+                                <button class="tab-btn" data-tab="bulkImport">Bulk Import</button>
+                                <button class="tab-btn" data-tab="listQuestions">View Questions</button>
+                            </div>
 
-                        <div class="admin-subsection">
-                            <h4>Bulk Import Questions (JSON)</h4>
-                            <div class="form-group">
-                                <label for="bulkUploadFile">Select JSON File</label>
-                                <input type="file" id="bulkUploadFile" accept=".json" class="form-control" />
-                                <p class="help-text">Upload a JSON file with questions array. <a
-                                        href="sample_questions.json" target="_blank">View sample format</a></p>
+                            <!-- Add Question Tab -->
+                            <div class="tab-content active" id="addQuestion">
+                                <div class="form-section">
+                                    <h3>Add New Question</h3>
+                                    <input type="hidden" id="editingQuestionId" value="" />
+                                    <div class="form-group">
+                                        <label for="questionText">Question</label>
+                                        <textarea id="questionText" class="form-control" rows="3"
+                                            placeholder="Enter the question text..."></textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Options</label>
+                                        <input type="text" id="option1" class="form-control" placeholder="Option A" />
+                                        <input type="text" id="option2" class="form-control" placeholder="Option B" />
+                                        <input type="text" id="option3" class="form-control" placeholder="Option C" />
+                                        <input type="text" id="option4" class="form-control" placeholder="Option D" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="correctAnswer">Correct Answer (0-3)</label>
+                                        <input type="number" id="correctAnswer" class="form-control" min="0" max="3"
+                                            value="0" />
+                                    </div>
+                                    <div class="button-group">
+                                        <button class="btn btn-primary" id="addQuestionBtn">Add Question</button>
+                                        <button class="btn btn-outline" id="cancelEditBtn" style="display: none;">Cancel
+                                            Edit</button>
+                                    </div>
+                                </div>
                             </div>
-                            <button class="btn btn-primary" id="bulkUploadBtn">Import Questions</button>
-                        </div>
 
-                        <div class="admin-subsection">
-                            <h4>Add New Question</h4>
-                            <input type="hidden" id="editingQuestionId" value="" />
-                            <div class="form-group">
-                                <label for="questionText">Question</label>
-                                <textarea id="questionText" class="form-control" rows="3"
-                                    placeholder="Enter the question text..."></textarea>
+                            <!-- Bulk Import Tab -->
+                            <div class="tab-content" id="bulkImport">
+                                <div class="form-section">
+                                    <h3>Bulk Import Questions (JSON)</h3>
+                                    <div class="form-group">
+                                        <label for="bulkUploadFile">Select JSON File</label>
+                                        <input type="file" id="bulkUploadFile" accept=".json" class="form-control" />
+                                        <p class="help-text">Upload a JSON file with questions array. <a
+                                                href="sample_questions.json" target="_blank">View sample format</a></p>
+                                    </div>
+                                    <button class="btn btn-primary" id="bulkUploadBtn">Import Questions</button>
+                                </div>
                             </div>
-                            <div class="form-group">
-                                <label>Options</label>
-                                <input type="text" id="option1" class="form-control" placeholder="Option A" />
-                                <input type="text" id="option2" class="form-control" placeholder="Option B" />
-                                <input type="text" id="option3" class="form-control" placeholder="Option C" />
-                                <input type="text" id="option4" class="form-control" placeholder="Option D" />
-                            </div>
-                            <div class="form-group">
-                                <label for="correctAnswer">Correct Answer (0-3)</label>
-                                <input type="number" id="correctAnswer" class="form-control" min="0" max="3"
-                                    value="0" />
-                            </div>
-                            <button class="btn btn-primary" id="addQuestionBtn">Add Question</button>
-                            <button class="btn btn-outline" id="cancelEditBtn" style="display: none;">Cancel
-                                Edit</button>
-                        </div>
 
-                        <div class="admin-subsection">
-                            <h4>Questions List</h4>
-                            <div id="questionsList" class="questions-display"></div>
-                            <button class="btn btn-danger-outline" id="clearQuestionsBtn">Clear All Questions</button>
+                            <!-- List Questions Tab -->
+                            <div class="tab-content" id="listQuestions">
+                                <div class="form-section">
+                                    <h3>Questions List</h3>
+                                    <div id="questionsList" class="questions-display"></div>
+                                    <button class="btn btn-danger-outline" id="clearQuestionsBtn">Clear All
+                                        Questions</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="admin-section">
-                        <h3>Interview Results</h3>
-                        <div id="resultsTableContainer"></div>
+                    <!-- Results Screen -->
+                    <div class="admin-screen" id="resultsScreen">
+                        <h2>Interview Results</h2>
+                        <div class="results-section">
+                            <div id="resultsTableContainer"></div>
+                        </div>
                     </div>
-
-                    <button class="btn btn-outline" id="logoutBtn"
-                        style="margin-top: 20px; width: 100%;">Logout</button>
                 </div>
             </div>
         </div>

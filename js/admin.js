@@ -2,6 +2,99 @@
 
 let currentSort = { field: 'completion_date', direction: 'desc' };
 
+// ===== ADMIN DASHBOARD NAVIGATION =====
+
+function switchAdminScreen(screenId) {
+    // Hide all admin screens
+    document.querySelectorAll('.admin-screen').forEach(screen => {
+        screen.classList.remove('active');
+    });
+
+    // Show selected screen
+    const selectedScreen = document.getElementById(screenId);
+    if (selectedScreen) {
+        selectedScreen.classList.add('active');
+    }
+
+    // Update navigation active state
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+        if (item.getAttribute('data-screen') === screenId) {
+            item.classList.add('active');
+        }
+    });
+
+    // Initialize screen content if needed
+    if (screenId === 'dashboardHome') {
+        updateDashboardStats();
+    } else if (screenId === 'resultsScreen') {
+        renderResultsTable();
+    } else if (screenId === 'questionsScreen') {
+        renderQuestionsList();
+    }
+}
+
+function updateDashboardStats() {
+    // Update total questions count
+    loadQuestionsFromDB().then(questions => {
+        document.getElementById('totalQuestionsCount').textContent = questions.length;
+    });
+
+    // Update interview duration
+    const interviewTimeInput = document.getElementById('interviewTime');
+    if (interviewTimeInput && interviewTimeInput.value) {
+        document.getElementById('currentDurationDisplay').textContent = interviewTimeInput.value;
+    }
+
+    // Update total results count
+    fetch('php/results.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        credentials: 'same-origin',
+        body: 'action=get_all'
+    })
+        .then(res => res.json())
+        .then(results => {
+            document.getElementById('totalResultsCount').textContent = results.length || 0;
+        })
+        .catch(err => console.error('Error fetching results count:', err));
+}
+
+// Setup navigation event listeners
+document.addEventListener('DOMContentLoaded', function () {
+    // Navigation click handlers
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', function (e) {
+            e.preventDefault();
+            const screenId = this.getAttribute('data-screen');
+            if (screenId) {
+                switchAdminScreen(screenId);
+            }
+        });
+    });
+
+    // Tab click handlers for question management
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            const tabId = this.getAttribute('data-tab');
+
+            // Remove active class from all tabs and contents
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+            // Add active class to clicked tab and corresponding content
+            this.classList.add('active');
+            const tabContent = document.getElementById(tabId);
+            if (tabContent) {
+                tabContent.classList.add('active');
+            }
+        });
+    });
+});
+
+// ===== END ADMIN DASHBOARD NAVIGATION =====
+
 function showAdminMessage(message, type = 'success') {
     const el = document.getElementById('adminMessage');
     if (!el) return;
