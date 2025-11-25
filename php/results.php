@@ -23,14 +23,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $percentage = $_POST['percentage'] ?? 0;
         $answers = $_POST['answers'] ?? '[]';
 
+        if (!$student_id || !$total_questions) {
+            echo json_encode(['success' => false, 'message' => 'Invalid student or question data']);
+            exit;
+        }
+
         $conn = getDBConnection();
+
+        // First, get the student's email and phone number
+        $student_stmt = $conn->prepare("SELECT email, phone FROM students WHERE id = ?");
+        $student_stmt->bind_param("i", $student_id);
+        $student_stmt->execute();
+        $student_result = $student_stmt->get_result();
+
+        if ($student_result->num_rows === 0) {
+            echo json_encode(['success' => false, 'message' => 'Student not found']);
+            $student_stmt->close();
+            $conn->close();
+            exit;
+        }
+
+        $student_row = $student_result->fetch_assoc();
+        $student_email = $student_row['email'];
+        $student_phone = $student_row['phone'];
+        $student_stmt->close();
+
+        // Check if someone with the same email or phone already submitted results
+        // This prevents the same person from submitting multiple times using different student IDs
+        $check_stmt = $conn->prepare(
+            "SELECT r.id FROM results r 
+             JOIN students s ON r.student_id = s.id 
+             WHERE (s.email = ? OR s.phone = ?) 
+             LIMIT 1"
+        );
+        $check_stmt->bind_param("ss", $student_email, $student_phone);
+        $check_stmt->execute();
+        $check_result = $check_stmt->get_result();
+
+        if ($check_result->num_rows > 0) {
+            // Duplicate submission detected (same email or phone)
+            echo json_encode(['success' => true, 'message' => 'This email or phone number has already submitted results']);
+            $check_stmt->close();
+            $conn->close();
+            exit;
+        }
+        $check_stmt->close();
+
+        // Insert the result
         $stmt = $conn->prepare("INSERT INTO results (student_id, score, total_questions, percentage, answers) VALUES (?, ?, ?, ?, ?)");
         $stmt->bind_param("iiids", $student_id, $score, $total_questions, $percentage, $answers);
 
         if ($stmt->execute()) {
-            echo json_encode(['success' => true]);
+            echo json_encode(['success' => true, 'message' => 'Result saved successfully']);
         } else {
-            echo json_encode(['success' => false, 'message' => 'Failed to save results']);
+            echo json_encode(['success' => false, 'message' => 'Failed to save results: ' . $stmt->error]);
         }
 
         $stmt->close();

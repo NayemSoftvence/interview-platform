@@ -57,11 +57,19 @@ async function startInterview() {
         quizState.ended = false;
         quizState.saving = false;
 
-        // Set time limit: use localStorage (admin-saved setting), otherwise default to 30
-        let interviewTime = localStorage.getItem('adminInterviewTime');
-        interviewTime = interviewTime ? parseInt(interviewTime, 10) : 30;
+        // Fetch interview time from database settings
+        try {
+            const settingsResponse = await fetch('php/settings.php?action=get_interview_time');
+            const settingsData = await settingsResponse.json();
+            let interviewTime = settingsData.success && settingsData.interview_time
+                ? parseInt(settingsData.interview_time, 10)
+                : 30; // Default to 30 minutes
 
-        quizState.timeLeft = interviewTime * 60; // Convert to seconds
+            quizState.timeLeft = interviewTime * 60; // Convert to seconds
+        } catch (err) {
+            console.error('Error loading interview time, using default (30 min):', err);
+            quizState.timeLeft = 30 * 60; // Default to 30 minutes if fetch fails
+        }
 
         // Update timer display
         updateTimerDisplay();

@@ -407,25 +407,48 @@ function saveInterviewTime() {
         return;
     }
 
-    // Store in localStorage for persistence across sessions
-    localStorage.setItem('adminInterviewTime', value);
-    showAdminMessage('Interview time updated', 'success');
-
-    // Broadcast update to all open windows/tabs using storage event
-    // This will trigger storage listener in any open index.html pages
-    try {
-        window.opener?.postMessage({ type: 'update-interview-time', value: value }, '*');
-    } catch (e) {
-        // Silently fail if no opener
-    }
+    // Send to server to save in database
+    fetch('php/settings.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        credentials: 'same-origin',
+        body: `action=update_interview_time&time=${value}`
+    })
+        .then(res => res.json())
+        .then(result => {
+            if (result.success) {
+                showAdminMessage('Interview time updated', 'success');
+                // Broadcast update to all open windows/tabs
+                if (window.opener && !window.opener.closed) {
+                    window.opener.postMessage({ type: 'update-interview-time', value: value }, '*');
+                }
+            } else {
+                showAdminMessage('Error: ' + (result.message || 'Failed to update interview time'), 'error');
+            }
+        })
+        .catch(err => {
+            showAdminMessage('Network error saving interview time', 'error');
+            console.error('Save interview time error:', err);
+        });
 }
 
 // Initialize admin panel with saved settings
 function initializeAdminPanel() {
     const interviewTimeInput = document.getElementById('interviewTime');
     if (interviewTimeInput) {
-        // Load saved interview time from localStorage, default to 30 if not set
-        const savedTime = localStorage.getItem('adminInterviewTime') || '30';
-        interviewTimeInput.value = savedTime;
+        // Load saved interview time from database via settings.php
+        fetch('php/settings.php?action=get_interview_time')
+            .then(res => res.json())
+            .then(result => {
+                if (result.success && result.interview_time) {
+                    interviewTimeInput.value = result.interview_time;
+                } else {
+                    interviewTimeInput.value = '30'; // Default fallback
+                }
+            })
+            .catch(err => {
+                console.error('Error loading interview time:', err);
+                interviewTimeInput.value = '30'; // Default fallback
+            });
     }
 }

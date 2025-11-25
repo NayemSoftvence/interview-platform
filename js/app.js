@@ -13,10 +13,22 @@ document.addEventListener('DOMContentLoaded', function () {
 function initializeTimerDisplay() {
     const timerEl = document.getElementById('timer');
     if (timerEl) {
-        // Get saved time or default to 30 minutes
-        const savedTime = localStorage.getItem('adminInterviewTime') || '30';
-        const minutes = parseInt(savedTime, 10);
-        timerEl.textContent = `${minutes.toString().padStart(2, '0')}:00`;
+        // Fetch interview time from database
+        fetch('php/settings.php?action=get_interview_time')
+            .then(res => res.json())
+            .then(result => {
+                if (result.success && result.interview_time) {
+                    const minutes = parseInt(result.interview_time, 10);
+                    timerEl.textContent = `${minutes.toString().padStart(2, '0')}:00`;
+                } else {
+                    // Default to 30 minutes if fetch fails
+                    timerEl.textContent = '30:00';
+                }
+            })
+            .catch(err => {
+                console.error('Error loading interview time:', err);
+                timerEl.textContent = '30:00'; // Default fallback
+            });
     }
 } function initApp() {
     // Set up event listeners
