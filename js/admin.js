@@ -427,6 +427,21 @@ function editQuestion(id) {
     if (addBtn) addBtn.textContent = 'Update Question';
     const cancelBtn = document.getElementById('cancelEditBtn');
     if (cancelBtn) cancelBtn.style.display = 'inline-block';
+
+    // Switch to 'Add Question' tab and scroll to form
+    const addQuestionTab = document.querySelector('.tab-btn[data-tab="addQuestion"]');
+    if (addQuestionTab) {
+        addQuestionTab.click();
+    }
+
+    // Scroll the form into view
+    const questionTextEl = document.getElementById('questionText');
+    if (questionTextEl) {
+        setTimeout(() => {
+            questionTextEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            questionTextEl.focus();
+        }, 100);
+    }
 }
 
 async function bulkUploadQuestions() {

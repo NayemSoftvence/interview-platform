@@ -322,9 +322,21 @@ body {
 /* Explicit scrollable areas for long lists */
 #questionsList,
 #resultsTableContainer {
-    max-height: calc(100vh - 260px);
+    max-height: calc(100vh - 320px);
     overflow: auto;
-    padding-right: 8px; /* avoid content under scrollbar */
+    padding-right: 8px;
+    /* avoid content under scrollbar */
+}
+
+/* Ensure form section is fully visible when editing */
+#addQuestion {
+    display: flex;
+    flex-direction: column;
+}
+
+#addQuestion .form-section {
+    flex-shrink: 0;
+    margin-bottom: 20px;
 }
 
 .questions-grid {
