@@ -28,7 +28,7 @@ function createTables()
         id INT(6) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(100) NOT NULL,
         email VARCHAR(100) NOT NULL UNIQUE,
-        phone VARCHAR(20) NOT NULL,
+        phone VARCHAR(20) NOT NULL UNIQUE,
         registration_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )";
 

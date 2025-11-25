@@ -6,31 +6,35 @@ header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // Get current interview time setting
-    $conn = getDBConnection();
+    $action = $_GET['action'] ?? 'get_interview_time';
 
-    // Create settings table if it doesn't exist
-    $sql = "CREATE TABLE IF NOT EXISTS settings (
-        id INT(1) PRIMARY KEY DEFAULT 1,
-        interview_time_minutes INT(3) NOT NULL DEFAULT 30,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-    )";
+    if ($action === 'get_interview_time') {
+        $conn = getDBConnection();
 
-    $conn->query($sql);
+        // Create settings table if it doesn't exist
+        $sql = "CREATE TABLE IF NOT EXISTS settings (
+            id INT(1) PRIMARY KEY DEFAULT 1,
+            interview_time_minutes INT(3) NOT NULL DEFAULT 30,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )";
 
-    // Get the setting
-    $result = $conn->query("SELECT interview_time_minutes FROM settings WHERE id = 1");
+        $conn->query($sql);
 
-    if ($result && $result->num_rows > 0) {
-        $row = $result->fetch_assoc();
-        echo json_encode(['success' => true, 'interview_time' => (int) $row['interview_time_minutes']]);
-    } else {
-        // Initialize with default value
-        $conn->query("INSERT INTO settings (id, interview_time_minutes) VALUES (1, 30) ON DUPLICATE KEY UPDATE interview_time_minutes=30");
-        echo json_encode(['success' => true, 'interview_time' => 30]);
+        // Get the setting
+        $result = $conn->query("SELECT interview_time_minutes FROM settings WHERE id = 1");
+
+        if ($result && $result->num_rows > 0) {
+            $row = $result->fetch_assoc();
+            echo json_encode(['success' => true, 'interview_time' => (int) $row['interview_time_minutes']]);
+        } else {
+            // Initialize with default value
+            $conn->query("INSERT INTO settings (id, interview_time_minutes) VALUES (1, 30) ON DUPLICATE KEY UPDATE interview_time_minutes=30");
+            echo json_encode(['success' => true, 'interview_time' => 30]);
+        }
+
+        $conn->close();
+        exit;
     }
-
-    $conn->close();
-    exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

@@ -17,6 +17,11 @@ async function registerStudent() {
         return;
     }
 
+    if (!isValidPhone(phone)) {
+        showRegistrationError('Please enter a valid phone number (10-15 digits)');
+        return;
+    }
+
     try {
         const response = await fetch('php/auth.php', {
             method: 'POST',
@@ -45,6 +50,12 @@ function showRegistrationError(message) {
 function isValidEmail(email) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
+}
+
+function isValidPhone(phone) {
+    // Accept 10-15 digits, with optional dashes, spaces, or parentheses
+    const phoneRegex = /^[\d\s()\-+]{10,15}$/;
+    return phoneRegex.test(phone);
 }
 
 // Admin login

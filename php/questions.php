@@ -11,13 +11,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     $questions = [];
     while ($row = $result->fetch_assoc()) {
+        // Create array of options with their original indices
+        $options = [
+            ['text' => $row['option1'], 'originalIndex' => 0],
+            ['text' => $row['option2'], 'originalIndex' => 1],
+            ['text' => $row['option3'], 'originalIndex' => 2],
+            ['text' => $row['option4'], 'originalIndex' => 3]
+        ];
+
+        // Shuffle the options for this student
+        shuffle($options);
+
+        // Find the new index of the correct answer after shuffling
+        $correctAnswerOriginalIndex = (int) $row['correct_answer'] - 1;
+        $newCorrectAnswerIndex = 0;
+        $shuffledOptions = [];
+
+        foreach ($options as $key => $option) {
+            $shuffledOptions[] = $option['text'];
+            if ($option['originalIndex'] === $correctAnswerOriginalIndex) {
+                $newCorrectAnswerIndex = $key;
+            }
+        }
+
         $questions[] = [
             'id' => $row['id'],
             'question' => $row['question'],
-            'options' => [$row['option1'], $row['option2'], $row['option3'], $row['option4']],
-            'correctAnswer' => $row['correct_answer'] - 1
+            'options' => $shuffledOptions,
+            'correctAnswer' => $newCorrectAnswerIndex
         ];
     }
+
+    // Shuffle the questions array so each student gets a different order
+    shuffle($questions);
 
     echo json_encode($questions);
     $conn->close();
