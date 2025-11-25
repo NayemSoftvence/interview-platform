@@ -102,6 +102,14 @@ body {
     height: 100%;
 }
 
+/* Make the main admin screen layout side-by-side: sidebar + content */
+#adminScreen.active {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 0;
+}
+
 .welcome-screen h2 {
     color: var(--dark);
     margin-bottom: 20px;
@@ -732,12 +740,21 @@ body {
     width: 100%;
 }
 
+/* ensure admin-content stretches to match sidebar height */
+.admin-content {
+    height: 100%;
+}
+
 .admin-screen {
     display: none;
 }
 
 .admin-screen.active {
-    display: block;
+    /* Make active admin screens fill the right pane and allow internal scrolling */
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    overflow: auto;
     animation: fadeIn 0.3s ease;
 }
 
