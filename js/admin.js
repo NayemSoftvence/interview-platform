@@ -30,6 +30,8 @@ function switchAdminScreen(screenId) {
     } else if (screenId === 'resultsScreen') {
         renderResultsTable();
     } else if (screenId === 'questionsScreen') {
+        // Ensure tabs are initialized/scoped, then render list
+        initQuestionTabs();
         renderQuestionsList();
     }
 }
@@ -73,25 +75,48 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // Tab click handlers for question management
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.addEventListener('click', function (e) {
-            e.preventDefault();
-            const tabId = this.getAttribute('data-tab');
-
-            // Remove active class from all tabs and contents
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-
-            // Add active class to clicked tab and corresponding content
-            this.classList.add('active');
-            const tabContent = document.getElementById(tabId);
-            if (tabContent) {
-                tabContent.classList.add('active');
-            }
-        });
-    });
+    // Initialize tabs for the questions section (scoped and idempotent)
+    initQuestionTabs();
 });
+
+// Initialize tab behavior specifically for the questions section.
+// This scopes event handlers to the .questions-section and is safe to call
+// multiple times (idempotent).
+function initQuestionTabs() {
+    const section = document.querySelector('.questions-section');
+    if (!section) return;
+
+    // Avoid attaching the handler multiple times
+    if (section.__tabsInitialized) return;
+    section.__tabsInitialized = true;
+
+    // Use event delegation for simplicity: a single click handler on the section
+    section.addEventListener('click', function (e) {
+        const btn = e.target.closest('.tab-btn');
+        if (!btn || !section.contains(btn)) return;
+        e.preventDefault();
+
+        const tabId = btn.getAttribute('data-tab');
+
+        // Toggle active classes only within this section
+        section.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        section.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+        btn.classList.add('active');
+        const tabContent = section.querySelector('#' + tabId);
+        if (tabContent) tabContent.classList.add('active');
+    });
+
+    // Ensure sensible defaults: if nothing active, default to Add Question
+    if (!section.querySelector('.tab-btn.active')) {
+        const defaultTab = section.querySelector('.tab-btn[data-tab="addQuestion"]');
+        if (defaultTab) defaultTab.classList.add('active');
+    }
+    if (!section.querySelector('.tab-content.active')) {
+        const defaultContent = section.querySelector('#addQuestion');
+        if (defaultContent) defaultContent.classList.add('active');
+    }
+}
 
 // ===== END ADMIN DASHBOARD NAVIGATION =====
 

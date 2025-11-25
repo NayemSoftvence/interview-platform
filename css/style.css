@@ -328,10 +328,11 @@ body {
     /* avoid content under scrollbar */
 }
 
-/* Ensure form section is fully visible when editing */
-#addQuestion {
+/* Ensure form section is fully visible when editing - controlled by .tab-content.active */
+.tab-content.active {
     display: flex;
     flex-direction: column;
+    animation: fadeIn 0.3s ease;
 }
 
 #addQuestion .form-section {
@@ -911,7 +912,9 @@ body {
 }
 
 .tab-content.active {
-    display: block;
+    /* already set above for layout; keep as fallback */
+    display: flex;
+    flex-direction: column;
     animation: fadeIn 0.3s ease;
 }
 
