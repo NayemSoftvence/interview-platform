@@ -34,6 +34,7 @@ body {
     display: flex;
     flex-direction: column;
     max-height: 90vh;
+    min-height: 600px;
 }
 
 .header {
@@ -78,14 +79,20 @@ body {
     padding: 30px;
     flex: 1;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
 }
 
 .screen {
     display: none;
+    width: 100%;
 }
 
-.active {
-    display: block;
+.screen.active {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
 }
 
 .welcome-screen h2 {
@@ -402,6 +409,8 @@ body {
     padding: 30px;
     border-radius: 10px;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    align-self: center;
+    justify-self: center;
 }
 
 .results-table {
@@ -629,22 +638,28 @@ body {
 
 .admin-dashboard {
     display: flex;
+    flex-direction: row;
     gap: 0;
     height: 100%;
     padding: 0;
     background-color: #f5f5f5;
+    width: 100%;
+    overflow: hidden;
 }
 
 .admin-sidebar {
-    width: 250px;
+    width: 280px;
+    min-width: 280px;
     background: linear-gradient(to bottom, var(--secondary), var(--primary));
     color: white;
     padding: 20px;
     display: flex;
     flex-direction: column;
     gap: 20px;
-    min-height: 600px;
+    height: 100%;
+    overflow-y: auto;
     border-right: 2px solid var(--secondary);
+    flex-shrink: 0;
 }
 
 .admin-logo {
@@ -705,6 +720,9 @@ body {
     padding: 30px;
     overflow-y: auto;
     background: white;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
 }
 
 .admin-screen {
@@ -905,9 +923,21 @@ body {
 }
 
 /* Responsive Design for Admin Dashboard */
+@media (max-width: 1200px) {
+    .admin-sidebar {
+        width: 240px;
+        min-width: 240px;
+    }
+
+    .admin-content {
+        padding: 25px;
+    }
+}
+
 @media (max-width: 1024px) {
     .admin-sidebar {
-        width: 200px;
+        width: 220px;
+        min-width: 220px;
     }
 
     .admin-content {
@@ -919,16 +949,22 @@ body {
     .admin-dashboard {
         flex-direction: column;
         height: auto;
+        overflow: visible;
     }
 
     .admin-sidebar {
         width: 100%;
+        min-width: 100%;
         min-height: auto;
         flex-direction: row;
         border-right: none;
         border-bottom: 2px solid var(--secondary);
         gap: 0;
         padding: 0;
+        height: auto;
+        flex-shrink: 0;
+        overflow-x: auto;
+        overflow-y: hidden;
     }
 
     .admin-logo {
@@ -940,6 +976,7 @@ body {
         overflow-x: auto;
         gap: 0;
         flex: 1;
+        padding: 0;
     }
 
     .nav-item {
@@ -947,6 +984,7 @@ body {
         white-space: nowrap;
         border-left: none;
         border-bottom: 3px solid transparent;
+        border-radius: 0;
     }
 
     .nav-item.active {
@@ -963,10 +1001,16 @@ body {
         margin-top: 0;
         padding: 12px;
         font-size: 14px;
+        border-radius: 0;
+        margin: 0;
+        white-space: nowrap;
     }
 
     .admin-content {
+        flex: 1;
         padding: 20px;
+        overflow-y: auto;
+        height: auto;
     }
 
     .admin-screen h2 {
