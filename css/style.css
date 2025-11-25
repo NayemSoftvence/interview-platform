@@ -319,6 +319,14 @@ body {
     border: 1px solid #e0e0e0;
 }
 
+/* Explicit scrollable areas for long lists */
+#questionsList,
+#resultsTableContainer {
+    max-height: calc(100vh - 260px);
+    overflow: auto;
+    padding-right: 8px; /* avoid content under scrollbar */
+}
+
 .questions-grid {
     display: grid;
     grid-template-columns: 1fr;
