@@ -330,7 +330,12 @@ body {
 
 /* Add bottom padding so last question isn't flush against the container edge */
 #questionsList {
-    padding-bottom: 32px;
+    padding-bottom: 80px;
+}
+
+/* Extra margin for the last question item so its action buttons remain visible */
+.question-item:last-child {
+    margin-bottom: 40px;
 }
 
 /* Ensure form section is fully visible when editing - controlled by .tab-content.active */

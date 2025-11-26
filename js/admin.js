@@ -77,9 +77,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Initialize tabs for the questions section (scoped and idempotent)
     initQuestionTabs();
-    // Top-level clear button (visible without switching to View Questions)
-    const clearTop = document.getElementById('clearQuestionsBtnTop');
-    if (clearTop) clearTop.addEventListener('click', function (e) { e.preventDefault(); clearQuestions(); });
+    // Attach clear button in Settings (moved here)
+    const clearSettingsBtn = document.getElementById('clearQuestionsBtnSettings');
+    if (clearSettingsBtn) clearSettingsBtn.addEventListener('click', function (e) { e.preventDefault(); clearQuestions(); });
 });
 
 // Initialize tab behavior specifically for the questions section.
@@ -244,6 +244,20 @@ async function clearQuestions() {
             const result = await response.json();
 
             if (result.success) {
+                // After clearing, switch to Questions screen and show the list
+                try {
+                    switchAdminScreen('questionsScreen');
+                    // ensure tabs are initialized then activate the list tab
+                    initQuestionTabs();
+                    const section = document.querySelector('.questions-section');
+                    if (section) {
+                        const listBtn = section.querySelector('.tab-btn[data-tab="listQuestions"]');
+                        if (listBtn) listBtn.click();
+                    }
+                } catch (e) {
+                    console.warn('Error switching to questions screen after clear:', e);
+                }
+                // Refresh the questions list from server
                 await renderQuestionsList();
                 showAdminMessage('All questions cleared!', 'success');
             } else {
@@ -305,7 +319,9 @@ async function deleteQuestion(id) {
 
 async function loadQuestionsFromDB() {
     try {
-        const response = await fetch('php/questions.php', { credentials: 'same-origin' });
+        // Add cache-buster and no-store to ensure we always get fresh data from server
+        const url = 'php/questions.php?_=' + Date.now();
+        const response = await fetch(url, { credentials: 'same-origin', cache: 'no-store' });
         return await response.json();
     } catch (error) {
         console.error('Error loading questions:', error);
