@@ -77,6 +77,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Initialize tabs for the questions section (scoped and idempotent)
     initQuestionTabs();
+    // Top-level clear button (visible without switching to View Questions)
+    const clearTop = document.getElementById('clearQuestionsBtnTop');
+    if (clearTop) clearTop.addEventListener('click', function (e) { e.preventDefault(); clearQuestions(); });
 });
 
 // Initialize tab behavior specifically for the questions section.

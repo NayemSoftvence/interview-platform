@@ -328,6 +328,11 @@ body {
     /* avoid content under scrollbar */
 }
 
+/* Add bottom padding so last question isn't flush against the container edge */
+#questionsList {
+    padding-bottom: 32px;
+}
+
 /* Ensure form section is fully visible when editing - controlled by .tab-content.active */
 .tab-content.active {
     display: flex;
