@@ -15,21 +15,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $sql = "CREATE TABLE IF NOT EXISTS settings (
             id INT(1) PRIMARY KEY DEFAULT 1,
             interview_time_minutes INT(3) NOT NULL DEFAULT 30,
+            exam_status BOOLEAN NOT NULL DEFAULT TRUE,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         )";
 
         $conn->query($sql);
 
         // Get the setting
-        $result = $conn->query("SELECT interview_time_minutes FROM settings WHERE id = 1");
+        $result = $conn->query("SELECT interview_time_minutes, exam_status FROM settings WHERE id = 1");
 
         if ($result && $result->num_rows > 0) {
             $row = $result->fetch_assoc();
-            echo json_encode(['success' => true, 'interview_time' => (int) $row['interview_time_minutes']]);
+            echo json_encode(['success' => true, 'interview_time' => (int) $row['interview_time_minutes'], 'exam_status' => (bool) $row['exam_status']]);
         } else {
             // Initialize with default value
-            $conn->query("INSERT INTO settings (id, interview_time_minutes) VALUES (1, 30) ON DUPLICATE KEY UPDATE interview_time_minutes=30");
-            echo json_encode(['success' => true, 'interview_time' => 30]);
+            $conn->query("INSERT INTO settings (id, interview_time_minutes, exam_status) VALUES (1, 30, TRUE) ON DUPLICATE KEY UPDATE interview_time_minutes=30, exam_status=TRUE");
+            echo json_encode(['success' => true, 'interview_time' => 30, 'exam_status' => true]);
         }
 
         $conn->close();
@@ -48,6 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'update_interview_time') {
         $time = (int) ($_POST['time'] ?? 0);
+        $exam_status = filter_var($_POST['exam_status'] ?? true, FILTER_VALIDATE_BOOLEAN);
 
         // Validate time
         if ($time < 5 || $time > 120) {
@@ -58,14 +60,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $conn = getDBConnection();
 
         // Update or insert the setting
-        $sql = "INSERT INTO settings (id, interview_time_minutes) VALUES (1, ?) 
-                ON DUPLICATE KEY UPDATE interview_time_minutes = VALUES(interview_time_minutes)";
+        $sql = "INSERT INTO settings (id, interview_time_minutes, exam_status) VALUES (1, ?, ?) 
+                ON DUPLICATE KEY UPDATE interview_time_minutes = VALUES(interview_time_minutes), exam_status = VALUES(exam_status)";
 
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param('i', $time);
+        $stmt->bind_param('ii', $time, $exam_status);
 
         if ($stmt->execute()) {
-            echo json_encode(['success' => true, 'message' => 'Interview time updated', 'interview_time' => $time]);
+            echo json_encode(['success' => true, 'message' => 'Interview settings updated', 'interview_time' => $time, 'exam_status' => $exam_status]);
         } else {
             echo json_encode(['success' => false, 'message' => 'Failed to update interview time']);
         }

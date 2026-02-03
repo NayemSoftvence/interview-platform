@@ -12,27 +12,52 @@ document.addEventListener('DOMContentLoaded', function () {
 
 function initializeTimerDisplay() {
     const timerEl = document.getElementById('timer');
-    if (timerEl) {
-        // Fetch interview time from database
-        fetch('php/settings.php?action=get_interview_time')
-            .then(res => res.json())
-            .then(result => {
-                if (result.success && result.interview_time) {
-                    const minutes = parseInt(result.interview_time, 10);
-                    timerEl.textContent = `${minutes.toString().padStart(2, '0')}:00`;
-                } else {
-                    // Default to 30 minutes if fetch fails
-                    timerEl.textContent = '30:00';
-                }
-            })
-            .catch(err => {
-                console.error('Error loading interview time:', err);
-                timerEl.textContent = '30:00'; // Default fallback
-            });
-    }
+    if (!timerEl) return; // Exit if timer element not found
+
+    // Fetch interview time from database
+    fetch('php/settings.php?action=get_interview_time')
+        .then(res => res.json())
+        .then(result => {
+            if (result.success && result.interview_time) {
+                const minutes = parseInt(result.interview_time, 10);
+                timerEl.textContent = `${minutes.toString().padStart(2, '0')}:00`;
+            } else {
+                // Default to 30 minutes if fetch fails or no time set
+                timerEl.textContent = '30:00';
+            }
+        })
+        .catch(err => {
+            console.error('Error loading interview time:', err);
+            timerEl.textContent = '30:00'; // Default fallback
+        });
 } function initApp() {
-    // Set up event listeners
-    setupEventListeners();
+    // Check exam status first
+    fetch('php/settings.php?action=get_interview_time')
+        .then(res => res.json())
+        .then(result => {
+            const mainContent = document.getElementById('mainContent');
+            const examClosedMessage = document.getElementById('examClosedMessage');
+
+            if (result.success && result.exam_status) {
+                // Exam is running, show main content
+                if (mainContent) mainContent.style.display = 'block';
+                if (examClosedMessage) examClosedMessage.style.display = 'none';
+                setupEventListeners(); // Only set up event listeners if exam is running
+                initializeTimerDisplay();
+            } else {
+                // Exam is not running, show closed message
+                if (mainContent) mainContent.style.display = 'none';
+                if (examClosedMessage) examClosedMessage.style.display = 'block';
+            }
+        })
+        .catch(err => {
+            console.error('Error fetching exam status:', err);
+            // Default to showing exam closed message on error
+            const mainContent = document.getElementById('mainContent');
+            const examClosedMessage = document.getElementById('examClosedMessage');
+            if (mainContent) mainContent.style.display = 'none';
+            if (examClosedMessage) examClosedMessage.style.display = 'block';
+        });
 }
 
 function setupEventListeners() {

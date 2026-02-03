@@ -33,6 +33,8 @@ function switchAdminScreen(screenId) {
         // Ensure tabs are initialized/scoped, then render list
         initQuestionTabs();
         renderQuestionsList();
+    } else if (screenId === 'settingsScreen') {
+        loadSettings();
     }
 }
 
@@ -42,11 +44,20 @@ function updateDashboardStats() {
         document.getElementById('totalQuestionsCount').textContent = questions.length;
     });
 
-    // Update interview duration
-    const interviewTimeInput = document.getElementById('interviewTime');
-    if (interviewTimeInput && interviewTimeInput.value) {
-        document.getElementById('currentDurationDisplay').textContent = interviewTimeInput.value;
-    }
+    // Update interview duration and exam status
+    fetch('php/settings.php?action=get_interview_time', { credentials: 'same-origin' })
+        .then(res => res.json())
+        .then(result => {
+            if (result.success) {
+                document.getElementById('currentDurationDisplay').textContent = result.interview_time;
+                const examStatusEl = document.getElementById('examStatusDisplay');
+                if (examStatusEl) {
+                    examStatusEl.textContent = result.exam_status ? 'Running' : 'Not Running';
+                    examStatusEl.className = result.exam_status ? 'stat-value status-running' : 'stat-value status-not-running';
+                }
+            }
+        })
+        .catch(err => console.error('Error fetching interview duration or exam status:', err));
 
     // Update total results count
     fetch('php/results.php', {
@@ -80,6 +91,14 @@ document.addEventListener('DOMContentLoaded', function () {
     // Attach clear button in Settings (moved here)
     const clearSettingsBtn = document.getElementById('clearQuestionsBtnSettings');
     if (clearSettingsBtn) clearSettingsBtn.addEventListener('click', function (e) { e.preventDefault(); clearQuestions(); });
+
+    // Exam status toggle event listener
+    const examStatusToggle = document.getElementById('examStatusToggle');
+    if (examStatusToggle) {
+        examStatusToggle.addEventListener('change', function () {
+            saveExamStatus(this.checked);
+        });
+    }
 });
 
 // Initialize tab behavior specifically for the questions section.
@@ -602,5 +621,42 @@ function initializeAdminPanel() {
                 console.error('Error loading interview time:', err);
                 interviewTimeInput.value = '30'; // Default fallback
             });
+    }
+}
+
+async function loadSettings() {
+    try {
+        const response = await fetch('php/settings.php?action=get_interview_time', { credentials: 'same-origin' });
+        const result = await response.json();
+
+        if (result.success) {
+            document.getElementById('interviewTime').value = result.interview_time;
+            document.getElementById('examStatusToggle').checked = result.exam_status;
+        } else {
+            showAdminMessage('Error loading settings: ' + (result.message || ''), 'error');
+        }
+    } catch (error) {
+        showAdminMessage('Error loading settings: ' + error.message, 'error');
+    }
+}
+
+async function saveExamStatus(status) {
+    try {
+        const response = await fetch('php/settings.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            credentials: 'same-origin',
+            body: `action=update_interview_time&time=${document.getElementById('interviewTime').value}&exam_status=${status}`
+        });
+        const result = await response.json();
+
+        if (result.success) {
+            showAdminMessage('Exam status updated: ' + (status ? 'Running' : 'Not Running'), 'success');
+            updateDashboardStats(); // Refresh stats with new exam status
+        } else {
+            showAdminMessage('Error updating exam status: ' + (result.message || ''), 'error');
+        }
+    } catch (error) {
+        showAdminMessage('Error updating exam status: ' + error.message, 'error');
     }
 }

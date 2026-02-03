@@ -83,6 +83,10 @@
                                 <div class="stat-label">Total Results</div>
                                 <div class="stat-value" id="totalResultsCount">0</div>
                             </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Exam Status</div>
+                                <div class="stat-value" id="examStatusDisplay">--</div>
+                            </div>
                         </div>
                         <div class="dashboard-quick-actions">
                             <button class="quick-action-btn" onclick="switchAdminScreen('settingsScreen')">
@@ -119,6 +123,16 @@
                                     <p class="help-text">Dangerous actions: clearing all stored questions.</p>
                                     <button class="btn btn-danger" id="clearQuestionsBtnSettings">Clear All
                                         Questions</button>
+                                </div>
+                                <div class="form-group">
+                                    <h3>Exam Status</h3>
+                                    <div class="toggle-switch">
+                                        <input type="checkbox" id="examStatusToggle" class="toggle-switch-checkbox">
+                                        <label class="toggle-switch-label" for="examStatusToggle">
+                                            <span class="toggle-switch-inner"></span>
+                                            <span class="toggle-switch-switch"></span>
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
                         </div>

@@ -519,6 +519,57 @@ body {
     margin-top: 20px;
 }
 
+/* Exam Closed Message Styles */
+#examClosedMessage {
+    display: flex;
+    /* Changed from none to flex for initial display control via JS */
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px;
+    border-radius: 10px;
+    background-color: #f8f8f8;
+    border: 1px solid #ddd;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    max-width: 600px;
+    margin: 80px auto;
+    color: #333;
+}
+
+#examClosedMessage h2 {
+    color: #d32f2f;
+    /* A strong red for emphasis */
+    margin-bottom: 20px;
+    font-size: 2.2em;
+    font-weight: 700;
+}
+
+#examClosedMessage p {
+    font-size: 1.1em;
+    line-height: 1.6;
+    margin-bottom: 15px;
+}
+
+#examClosedMessage p:last-of-type {
+    margin-bottom: 30px;
+}
+
+#examClosedMessage .btn {
+    background-color: #007bff;
+    /* Blue button for admin portal */
+    color: white;
+    padding: 12px 25px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+#examClosedMessage .btn:hover {
+    background-color: #0056b3;
+}
+
 @media (max-width: 600px) {
     .content {
         padding: 20px;
@@ -1088,4 +1139,82 @@ body {
         padding: 10px 15px;
         font-size: 13px;
     }
+}
+
+/* Toggle Switch Styles */
+.toggle-switch {
+    position: relative;
+    width: 60px;
+    display: inline-block;
+    vertical-align: middle;
+    margin: 0 10px;
+}
+
+.toggle-switch-checkbox {
+    display: none;
+}
+
+.toggle-switch-label {
+    display: block;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid #ccc;
+    border-radius: 20px;
+}
+
+.toggle-switch-inner {
+    display: block;
+    width: 200%;
+    margin-left: -100%;
+    transition: margin 0.3s ease-in-out;
+}
+
+.toggle-switch-inner:before,
+.toggle-switch-inner:after {
+    float: left;
+    width: 50%;
+    height: 30px;
+    padding: 0;
+    line-height: 30px;
+    font-size: 14px;
+    color: white;
+    font-weight: bold;
+    box-sizing: border-box;
+}
+
+.toggle-switch-inner:before {
+    content: "ON";
+    padding-left: 10px;
+    background-color: #4CAF50;
+    color: #fff;
+}
+
+.toggle-switch-inner:after {
+    content: "OFF";
+    padding-right: 10px;
+    background-color: #f44336;
+    color: #fff;
+    text-align: right;
+}
+
+.toggle-switch-switch {
+    display: block;
+    width: 22px;
+    margin: 4px;
+    background: #fff;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 32px;
+    border: 2px solid #ccc;
+    border-radius: 20px;
+    transition: all 0.3s ease-in-out;
+}
+
+.toggle-switch-checkbox:checked+.toggle-switch-label .toggle-switch-inner {
+    margin-left: 0;
+}
+
+.toggle-switch-checkbox:checked+.toggle-switch-label .toggle-switch-switch {
+    right: 0px;
 }

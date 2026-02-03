@@ -8,13 +8,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
     if ($action === 'login') {
-        $username = $_POST['username'] ?? '';
-        $password = $_POST['password'] ?? '';
+        $username = htmlspecialchars($_POST['username'] ?? '', ENT_QUOTES, 'UTF-8');
+        $password = htmlspecialchars($_POST['password'] ?? '', ENT_QUOTES, 'UTF-8');
 
-        // NOTE: For now credentials are validated here server-side.
-        // Replace with a secure user store or hashed password verification.
-        $ADMIN_USERNAME = 'admin';
-        $ADMIN_PASSWORD = 'password123';
+        // Retrieve credentials from environment variables or a secure configuration
+        // These should be set in your .env file
+        $ADMIN_USERNAME = $_ENV['ADMIN_USERNAME'] ?? 'admin';
+        $ADMIN_PASSWORD = $_ENV['ADMIN_PASSWORD'] ?? 'password123';
+
 
         if ($username === $ADMIN_USERNAME && $password === $ADMIN_PASSWORD) {
             // Mark session as admin

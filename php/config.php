@@ -1,9 +1,14 @@
 <?php
+require __DIR__ . '/../vendor/autoload.php';
+
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
+$dotenv->load();
+
 // Database configuration
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'zhndev_flutter_interview');
-define('DB_USER', 'zhndev_flutter_interview1');
-define('DB_PASS', 'i{PoP,VNfeIo0J(G');
+define('DB_HOST', $_ENV['DB_HOST']);
+define('DB_NAME', $_ENV['DB_NAME']);
+define('DB_USER', $_ENV['DB_USER']);
+define('DB_PASS', $_ENV['DB_PASS']);
 
 // Create connection
 function getDBConnection()
