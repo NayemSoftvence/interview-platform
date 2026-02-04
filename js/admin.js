@@ -99,6 +99,12 @@ document.addEventListener('DOMContentLoaded', function () {
             saveExamStatus(this.checked);
         });
     }
+
+    // Welcome content save button
+    const saveWelcomeContentBtn = document.getElementById('saveWelcomeContentBtn');
+    if (saveWelcomeContentBtn) {
+        saveWelcomeContentBtn.addEventListener('click', saveWelcomeContent);
+    }
 });
 
 // Initialize tab behavior specifically for the questions section.
@@ -638,15 +644,20 @@ async function loadSettings() {
     } catch (error) {
         showAdminMessage('Error loading settings: ' + error.message, 'error');
     }
+
+    // Load welcome content
+    await loadWelcomeContent();
 }
 
 async function saveExamStatus(status) {
     try {
+        // Convert boolean to integer (1 or 0) for PHP
+        const statusValue = status ? 1 : 0;
         const response = await fetch('php/settings.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             credentials: 'same-origin',
-            body: `action=update_interview_time&time=${document.getElementById('interviewTime').value}&exam_status=${status}`
+            body: `action=update_interview_time&time=${document.getElementById('interviewTime').value}&exam_status=${statusValue}`
         });
         const result = await response.json();
 
@@ -659,4 +670,84 @@ async function saveExamStatus(status) {
     } catch (error) {
         showAdminMessage('Error updating exam status: ' + error.message, 'error');
     }
+}
+
+// ===== WELCOME CONTENT MANAGEMENT =====
+
+async function loadWelcomeContent() {
+    try {
+        const response = await fetch('php/settings.php?action=get_welcome_content', { credentials: 'same-origin' });
+        const result = await response.json();
+
+        if (result.success && result.welcome_content) {
+            const content = result.welcome_content;
+            document.getElementById('welcomeTitle').value = content.title || '';
+            document.getElementById('welcomeDescription').value = content.description || '';
+            document.getElementById('welcomeInstructions').value = content.instructions || '';
+        } else {
+            // Set defaults if no content found
+            document.getElementById('welcomeTitle').value = 'Welcome to the Flutter Mock Interview';
+            document.getElementById('welcomeDescription').value = 'This quiz will test your knowledge of Flutter development. The interview will automatically close if you switch tabs or click outside the browser window.';
+            document.getElementById('welcomeInstructions').value = 'There are multiple-choice questions about Flutter\nSelect one answer for each question\nYou cannot go back to previous questions\nThe interview will close if you switch tabs or click outside\nComplete the interview within the time limit';
+        }
+    } catch (error) {
+        console.error('Error loading welcome content:', error);
+    }
+}
+
+async function saveWelcomeContent() {
+    const title = document.getElementById('welcomeTitle').value.trim();
+    const description = document.getElementById('welcomeDescription').value.trim();
+    const instructions = document.getElementById('welcomeInstructions').value.trim();
+
+    if (!title || !description || !instructions) {
+        showAdminMessage('Please fill in all welcome content fields', 'error', 'welcomeContentMessage');
+        return;
+    }
+
+    try {
+        const response = await fetch('php/settings.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            credentials: 'same-origin',
+            body: `action=save_welcome_content&title=${encodeURIComponent(title)}&description=${encodeURIComponent(description)}&instructions=${encodeURIComponent(instructions)}`
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showAdminMessage('Welcome content saved successfully!', 'success', 'welcomeContentMessage');
+        } else {
+            showAdminMessage('Error saving welcome content: ' + (result.message || ''), 'error', 'welcomeContentMessage');
+        }
+    } catch (error) {
+        showAdminMessage('Network error saving welcome content: ' + error.message, 'error', 'welcomeContentMessage');
+    }
+}
+
+// Update showAdminMessage to accept optional elementId
+function showAdminMessageOriginal(message, type = 'success') {
+    const el = document.getElementById('adminMessage');
+    if (!el) return;
+    el.textContent = message;
+    el.classList.remove('success', 'error');
+    el.classList.add(type === 'error' ? 'error' : 'success');
+    setTimeout(() => {
+        el.textContent = '';
+        el.classList.remove('success', 'error');
+    }, 5000);
+}
+
+// Override showAdminMessage to support optional elementId
+const originalShowAdminMessage = showAdminMessage;
+function showAdminMessage(message, type = 'success', elementId = null) {
+    const el = elementId ? document.getElementById(elementId) : document.getElementById('adminMessage');
+    if (!el) return;
+    el.textContent = message;
+    el.classList.remove('success', 'error');
+    el.classList.add(type === 'error' ? 'error' : 'success');
+    setTimeout(() => {
+        el.textContent = '';
+        el.classList.remove('success', 'error');
+    }, 5000);
 }

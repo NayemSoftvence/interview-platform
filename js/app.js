@@ -8,6 +8,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Initialize timer display with default or saved time
     initializeTimerDisplay();
+    
+    // Load welcome content
+    loadAndApplyWelcomeContent();
+    
+    // Setup event listeners (always call, not just on index.html)
+    setupEventListeners();
 });
 
 function initializeTimerDisplay() {
@@ -42,7 +48,6 @@ function initializeTimerDisplay() {
                 // Exam is running, show main content
                 if (mainContent) mainContent.style.display = 'block';
                 if (examClosedMessage) examClosedMessage.style.display = 'none';
-                setupEventListeners(); // Only set up event listeners if exam is running
                 initializeTimerDisplay();
             } else {
                 // Exam is not running, show closed message
@@ -119,4 +124,44 @@ function showStudentRegister() {
     showScreen('studentRegisterScreen');
     // Clear any previous errors
     document.getElementById('registrationError').textContent = '';
+}
+
+// ===== LOAD AND APPLY WELCOME CONTENT =====
+
+async function loadAndApplyWelcomeContent() {
+    try {
+        const response = await fetch('php/settings.php?action=get_welcome_content');
+        const result = await response.json();
+
+        if (result.success && result.welcome_content) {
+            const content = result.welcome_content;
+            
+            // Update welcome screen title
+            const titleEl = document.querySelector('#welcomeScreen h2');
+            if (titleEl && content.title) {
+                titleEl.textContent = content.title;
+            }
+
+            // Update welcome screen description
+            const descEl = document.querySelector('#welcomeScreen > p:first-of-type');
+            if (descEl && content.description) {
+                descEl.textContent = content.description;
+            }
+
+            // Update instructions list
+            const instructionsList = document.querySelector('.instructions-list');
+            if (instructionsList && content.instructions) {
+                instructionsList.innerHTML = '';
+                const instructions = content.instructions.split('\n').filter(i => i.trim());
+                instructions.forEach(instruction => {
+                    const li = document.createElement('li');
+                    li.textContent = instruction.trim();
+                    instructionsList.appendChild(li);
+                });
+            }
+        }
+    } catch (error) {
+        console.error('Error loading welcome content:', error);
+        // Use defaults if fetch fails
+    }
 }

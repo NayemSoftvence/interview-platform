@@ -99,6 +99,8 @@ function adminLogin() {
 function showAdminPanel() {
     showScreen('adminScreen');
     initializeAdminPanel();
+    // Load dashboard stats immediately
+    updateDashboardStats();
     renderQuestionsList();
     renderResultsTable();
 }
@@ -125,10 +127,20 @@ function logout() {
 // Initialize login form keyboard support
 function initLoginForm() {
     const passwordInput = document.getElementById('adminPassword');
+    const usernameInput = document.getElementById('adminUsername');
 
     if (passwordInput) {
-        // Allow Enter key to submit login
+        // Allow Enter key to submit login from password field
         passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                adminLogin();
+            }
+        });
+    }
+
+    if (usernameInput) {
+        // Allow Enter key to submit login from username field
+        usernameInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 adminLogin();
             }

@@ -1,8 +1,7 @@
 <?php
+header('Content-Type: application/json');
 require_once 'config.php';
 session_start();
-
-header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';

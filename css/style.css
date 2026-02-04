@@ -1218,3 +1218,116 @@ body {
 .toggle-switch-checkbox:checked+.toggle-switch-label .toggle-switch-switch {
     right: 0px;
 }
+
+/* Fix for Add Question form visibility */
+#addQuestion .form-section {
+    background: #fff;
+    border-radius: 8px;
+    padding: 25px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    overflow: visible;
+    display: block !important;
+}
+
+/* Ensure form controls are visible */
+#questionText,
+#option1,
+#option2,
+#option3,
+#option4,
+#correctAnswer {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 100% !important;
+}
+
+/* Button group visibility */
+.button-group {
+    display: flex !important;
+    gap: 15px;
+    margin-top: 25px;
+    flex-wrap: wrap;
+    visibility: visible !important;
+}
+
+#addQuestionBtn,
+#cancelEditBtn {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Ensure tab content is properly displayed */
+#addQuestion.tab-content.active {
+    display: block !important;
+    animation: fadeIn 0.3s ease;
+}
+
+/* Form group fixes */
+#addQuestion .form-group {
+    margin-bottom: 20px;
+    display: block !important;
+}
+
+#addQuestion .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #333;
+    font-size: 14px;
+}
+
+/* Fix textarea */
+textarea.form-control {
+    min-height: 100px;
+    resize: vertical;
+    display: block !important;
+}
+
+/* Make sure inputs are visible */
+input[type="text"].form-control,
+input[type="number"].form-control,
+textarea.form-control {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 12px 15px;
+    font-size: 14px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Specific fix for the Add Question section */
+.questions-section .form-section {
+    opacity: 1 !important;
+    height: auto !important;
+    min-height: 0 !important;
+}
+
+/* Override any display:none that might be affecting form elements */
+#questionText:not([style*="display: none"]),
+#option1:not([style*="display: none"]),
+#option2:not([style*="display: none"]),
+#option3:not([style*="display: none"]),
+#option4:not([style*="display: none"]),
+#correctAnswer:not([style*="display: none"]) {
+    display: block !important;
+}
+
+/* Ensure the entire questions screen is visible */
+#questionsScreen.admin-screen.active {
+    display: flex !important;
+    flex-direction: column;
+}
+
+/* Tab content display fix */
+.questions-section .tab-content {
+    display: none;
+}
+
+.questions-section .tab-content.active {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}

@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin Portal - Flutter Mock Interview Platform</title>
-    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/style-modern.css" />
 </head>
 
 <body>
@@ -108,6 +108,26 @@
                     <div class="admin-screen" id="settingsScreen">
                         <h2>Interview Settings</h2>
                         <div class="admin-form-container">
+                            <!-- Home Screen Text Control -->
+                            <div class="form-section">
+                                <h3>Home Screen Content</h3>
+                                <div class="form-group">
+                                    <label for="welcomeTitle">Welcome Title</label>
+                                    <input type="text" id="welcomeTitle" class="form-control" placeholder="Enter welcome title" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="welcomeDescription">Welcome Description</label>
+                                    <textarea id="welcomeDescription" class="form-control" rows="4" placeholder="Enter welcome description"></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label for="welcomeInstructions">Instructions (comma-separated)</label>
+                                    <textarea id="welcomeInstructions" class="form-control" rows="5" placeholder="Enter instructions, one per line"></textarea>
+                                </div>
+                                <button class="btn btn-primary" id="saveWelcomeContentBtn">Save Welcome Content</button>
+                                <div id="welcomeContentMessage" class="admin-message"></div>
+                            </div>
+
+                            <!-- Interview Duration -->
                             <div class="form-section">
                                 <h3>Interview Duration</h3>
                                 <div class="form-group">
@@ -217,6 +237,22 @@
     <script src="js/auth.js"></script>
     <script src="js/admin.js"></script>
     <script src="js/app.js"></script>
+    <script>
+        // Check session on page load to maintain admin state
+        (async function checkAdminSession() {
+            try {
+                const response = await fetch('php/check_session.php', { credentials: 'same-origin' });
+                const result = await response.json();
+
+                if (result.success && result.is_admin) {
+                    // User is logged in, show admin panel
+                    showAdminPanel();
+                }
+            } catch (error) {
+                console.error('Session check failed:', error);
+            }
+        })();
+    </script>
 </body>
 
 </html>

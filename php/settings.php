@@ -1,6 +1,15 @@
 <?php
+// Start output buffering to prevent any accidental output
+ob_start();
+
+// Suppress PHP warnings/notices that might corrupt JSON output
+error_reporting(E_ERROR | E_PARSE);
+
 require_once 'config.php';
 session_start();
+
+// Clean any previous output
+ob_clean();
 
 header('Content-Type: application/json');
 
@@ -16,6 +25,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             id INT(1) PRIMARY KEY DEFAULT 1,
             interview_time_minutes INT(3) NOT NULL DEFAULT 30,
             exam_status BOOLEAN NOT NULL DEFAULT TRUE,
+            welcome_title VARCHAR(255),
+            welcome_description TEXT,
+            welcome_instructions TEXT,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         )";
 
@@ -31,6 +43,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             // Initialize with default value
             $conn->query("INSERT INTO settings (id, interview_time_minutes, exam_status) VALUES (1, 30, TRUE) ON DUPLICATE KEY UPDATE interview_time_minutes=30, exam_status=TRUE");
             echo json_encode(['success' => true, 'interview_time' => 30, 'exam_status' => true]);
+        }
+
+        $conn->close();
+        exit;
+    }
+
+    if ($action === 'get_welcome_content') {
+        $conn = getDBConnection();
+
+        // Get the setting
+        $result = $conn->query("SELECT welcome_title, welcome_description, welcome_instructions FROM settings WHERE id = 1");
+
+        if ($result && $result->num_rows > 0) {
+            $row = $result->fetch_assoc();
+            echo json_encode([
+                'success' => true,
+                'welcome_content' => [
+                    'title' => $row['welcome_title'] ?: '',
+                    'description' => $row['welcome_description'] ?: '',
+                    'instructions' => $row['welcome_instructions'] ?: ''
+                ]
+            ]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'No welcome content found']);
         }
 
         $conn->close();
@@ -59,17 +95,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $conn = getDBConnection();
 
-        // Update or insert the setting
-        $sql = "INSERT INTO settings (id, interview_time_minutes, exam_status) VALUES (1, ?, ?) 
-                ON DUPLICATE KEY UPDATE interview_time_minutes = VALUES(interview_time_minutes), exam_status = VALUES(exam_status)";
+        // Update or insert the setting using SQLite-compatible syntax
+        // INSERT OR REPLACE works in both SQLite and MySQL
+        $sql = "INSERT OR REPLACE INTO settings (id, interview_time_minutes, exam_status) VALUES (1, ?, ?)";
 
         $stmt = $conn->prepare($sql);
+        
+        if (!$stmt) {
+            echo json_encode(['success' => false, 'message' => 'Database error: ' . $conn->error]);
+            $conn->close();
+            exit;
+        }
+        
         $stmt->bind_param('ii', $time, $exam_status);
 
         if ($stmt->execute()) {
-            echo json_encode(['success' => true, 'message' => 'Interview settings updated', 'interview_time' => $time, 'exam_status' => $exam_status]);
+            echo json_encode(['success' => true, 'message' => 'Interview settings updated', 'interview_time' => $time, 'exam_status' => (bool)$exam_status]);
         } else {
             echo json_encode(['success' => false, 'message' => 'Failed to update interview time']);
+        }
+
+        $stmt->close();
+        $conn->close();
+        exit;
+    }
+
+    if ($action === 'save_welcome_content') {
+        $title = $_POST['title'] ?? '';
+        $description = $_POST['description'] ?? '';
+        $instructions = $_POST['instructions'] ?? '';
+
+        $conn = getDBConnection();
+
+        // Update welcome content
+        $sql = "UPDATE settings SET welcome_title = ?, welcome_description = ?, welcome_instructions = ? WHERE id = 1";
+        
+        $stmt = $conn->prepare($sql);
+        
+        if (!$stmt) {
+            echo json_encode(['success' => false, 'message' => 'Database error: ' . $conn->error]);
+            $conn->close();
+            exit;
+        }
+        
+        $stmt->bind_param('sss', $title, $description, $instructions);
+
+        if ($stmt->execute()) {
+            echo json_encode(['success' => true, 'message' => 'Welcome content saved']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to save welcome content']);
         }
 
         $stmt->close();
