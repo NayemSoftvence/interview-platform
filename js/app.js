@@ -1,5 +1,8 @@
 // Main application controller
 document.addEventListener('DOMContentLoaded', function () {
+    // Apply theme if set
+    applyThemeToCurrentPage();
+    
     // Initialize the application
     initApp();
 
@@ -15,6 +18,17 @@ document.addEventListener('DOMContentLoaded', function () {
     // Setup event listeners (always call, not just on index.html)
     setupEventListeners();
 });
+
+function applyThemeToCurrentPage() {
+    const savedTheme = localStorage.getItem('appTheme') || 'style-modern';
+    if (savedTheme !== 'style-modern' && !document.querySelector(`link[href*="${savedTheme}.css"]`)) {
+        const themeLink = document.createElement('link');
+        themeLink.rel = 'stylesheet';
+        themeLink.href = `css/${savedTheme}.css?v=2.1`;
+        themeLink.dataset.theme = 'true';
+        document.head.appendChild(themeLink);
+    }
+}
 
 function initializeTimerDisplay() {
     const timerEl = document.getElementById('timer');

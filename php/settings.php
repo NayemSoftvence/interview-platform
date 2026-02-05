@@ -32,6 +32,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         )";
 
         $conn->query($sql);
+        
+        // Ensure columns exist (for existing tables) - silently ignore errors if columns already exist
+        @$conn->query("ALTER TABLE settings ADD COLUMN welcome_title VARCHAR(255) DEFAULT NULL");
+        @$conn->query("ALTER TABLE settings ADD COLUMN welcome_description TEXT DEFAULT NULL");
+        @$conn->query("ALTER TABLE settings ADD COLUMN welcome_instructions TEXT DEFAULT NULL");
 
         // Get the setting
         $result = $conn->query("SELECT interview_time_minutes, exam_status FROM settings WHERE id = 1");
@@ -126,6 +131,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $instructions = $_POST['instructions'] ?? '';
 
         $conn = getDBConnection();
+        
+        // Ensure columns exist - silently ignore errors if columns already exist
+        @$conn->query("ALTER TABLE settings ADD COLUMN welcome_title VARCHAR(255) DEFAULT NULL");
+        @$conn->query("ALTER TABLE settings ADD COLUMN welcome_description TEXT DEFAULT NULL");
+        @$conn->query("ALTER TABLE settings ADD COLUMN welcome_instructions TEXT DEFAULT NULL");
 
         // Update welcome content
         $sql = "UPDATE settings SET welcome_title = ?, welcome_description = ?, welcome_instructions = ? WHERE id = 1";

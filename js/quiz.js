@@ -179,20 +179,24 @@ function showQuestion(index) {
     // Set question text
     document.getElementById('questionTextElement').textContent = question.question;
 
-    // Clear and populate options
+    // Clear and populate options - IMPORTANT: Always clear first to prevent showing previous options
     const optionsContainer = document.getElementById('optionsContainer');
-    optionsContainer.innerHTML = '';
+    optionsContainer.innerHTML = ''; // Completely clear previous options
 
-    question.options.forEach((option, i) => {
-        const optionElement = document.createElement('div');
-        optionElement.className = 'option';
-        if (quizState.userAnswers[index] === i) {
-            optionElement.classList.add('selected');
-        }
-        optionElement.textContent = option;
-        optionElement.addEventListener('click', () => selectOption(i));
-        optionsContainer.appendChild(optionElement);
-    });
+    // Add all options fresh for current question
+    if (Array.isArray(question.options)) {
+        question.options.forEach((option, i) => {
+            const optionElement = document.createElement('div');
+            optionElement.className = 'option';
+            // Only mark as selected if user already answered this question
+            if (quizState.userAnswers[index] !== undefined && quizState.userAnswers[index] === i) {
+                optionElement.classList.add('selected');
+            }
+            optionElement.textContent = option;
+            optionElement.addEventListener('click', () => selectOption(i));
+            optionsContainer.appendChild(optionElement);
+        });
+    }
 
     // Update navigation buttons
     document.getElementById('prevBtn').disabled = index === 0;
@@ -262,11 +266,36 @@ async function endInterview() {
     });
 
     const totalQuestions = quizState.questions.length;
-    const percentage = ((score / totalQuestions) * 100).toFixed(2);
+    const percentage = parseFloat(((score / totalQuestions) * 100).toFixed(2));
     const answers = JSON.stringify(quizState.userAnswers);
+    
+    // Display results immediately (before saving to ensure they show)
+    const finalScoreEl = document.getElementById('finalScore');
+    const resultMessageEl = document.getElementById('resultMessage');
+    
+    if (finalScoreEl) {
+        finalScoreEl.textContent = `${score}/${totalQuestions}`;
+    }
+    
+    // Set result message based on performance
+    let message = "You need more practice. Review Flutter concepts and try again.";
+    if (percentage >= 80) {
+        message = "Excellent! You have strong Flutter knowledge.";
+    } else if (percentage >= 60) {
+        message = "Good job! You have a solid understanding of Flutter.";
+    } else if (percentage >= 40) {
+        message = "Not bad! Keep studying Flutter to improve.";
+    }
+    
+    if (resultMessageEl) {
+        resultMessageEl.textContent = message;
+    }
+
+    // Show results screen immediately
+    showScreen('resultsScreen');
 
     try {
-        // Save results to database
+        // Save results to database asynchronously
         const response = await fetch('php/results.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -284,22 +313,6 @@ async function endInterview() {
 
     // Close warning modal if it's open
     hideWarningModal();
-
-    // Display results
-    document.getElementById('finalScore').textContent = `${score}/${totalQuestions}`;
-
-    // Set result message based on performance
-    let message = "You need more practice. Review Flutter concepts and try again.";
-    if (percentage >= 80) {
-        message = "Excellent! You have strong Flutter knowledge.";
-    } else if (percentage >= 60) {
-        message = "Good job! You have a solid understanding of Flutter.";
-    } else if (percentage >= 40) {
-        message = "Not bad! Keep studying Flutter to improve.";
-    }
-
-    document.getElementById('resultMessage').textContent = message;
-    showScreen('resultsScreen');
 }
 
 function restartInterview() {

@@ -1,0 +1,214 @@
+/* ===== Theme: Professional Blue ===== */
+/* Clean, trustworthy, corporate-friendly color scheme */
+
+:root {
+    /* Primary Colors */
+    --primary: #2563EB;
+    --primary-dark: #1D4ED8;
+    --secondary: #60A5FA;
+    --accent: #10B981;
+    
+    /* Background & Surface */
+    --background: #F8FAFC;
+    --light: #F1F5F9;
+    --lighter: #E2E8F0;
+    --border: #CBD5E1;
+    
+    /* Surface */
+    --surface: #FFFFFF;
+    
+    /* Text Colors */
+    --dark: #1E293B;
+    --text: #475569;
+    --text-light: #64748B;
+    
+    /* Status Colors */
+    --success: #22C55E;
+    --warning: #F59E0B;
+    --danger: #EF4444;
+    --info: #3B82F6;
+}
+
+/* ===== HEADER STYLES ===== */
+.header {
+    background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+    color: white;
+}
+
+.header h1 {
+    color: white;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.header p {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* ===== BUTTON STYLES ===== */
+.btn {
+    background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+
+.btn:hover {
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+}
+
+.btn-outline {
+    border-color: #2563EB;
+    color: #2563EB;
+}
+
+.btn-outline:hover {
+    background: #2563EB;
+}
+
+/* ===== ADMIN SIDEBAR ===== */
+.admin-sidebar {
+    background: linear-gradient(180deg, #60A5FA 0%, #2563EB 100%);
+}
+
+.admin-nav .nav-item:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.admin-nav .nav-item.active {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+/* ===== FORM & INPUT STYLES ===== */
+.form-control {
+    border-color: #CBD5E1;
+    background: #F8FAFC;
+}
+
+.form-control:focus {
+    border-color: #2563EB;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* ===== ADMIN SCREEN HEADER ===== */
+.admin-screen h2 {
+    color: #1E293B;
+    border-bottom-color: #2563EB;
+}
+
+/* ===== STAT CARDS ===== */
+.stat-card {
+    background: white;
+    border-color: #CBD5E1;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.stat-card:hover {
+    box-shadow: 0 10px 25px rgba(37, 99, 235, 0.1);
+}
+
+.stat-value {
+    color: #2563EB;
+}
+
+/* ===== QUICK ACTION BUTTONS ===== */
+.quick-action-btn {
+    background: white;
+    border-color: #2563EB;
+    color: #2563EB;
+}
+
+.quick-action-btn:hover {
+    background: #2563EB;
+    color: white;
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.2);
+}
+
+/* ===== TABS ===== */
+.tab-btn {
+    color: #64748B;
+}
+
+.tab-btn:hover,
+.tab-btn.active {
+    color: #2563EB;
+    border-bottom-color: #2563EB;
+}
+
+/* ===== FORM SECTION ===== */
+.form-section {
+    background: #F8FAFC;
+    border-color: #CBD5E1;
+}
+
+/* ===== QUESTION ITEM ===== */
+.question-item {
+    background: white;
+    border-color: #CBD5E1;
+}
+
+.question-item li.correct-option {
+    color: #22C55E;
+    background-color: #F0FDF4;
+}
+
+/* ===== RESULTS TABLE ===== */
+.results-table th {
+    background-color: #2563EB;
+}
+
+.results-table th:hover {
+    background: #1D4ED8;
+}
+
+/* ===== PROGRESS BAR ===== */
+.progress {
+    background: linear-gradient(90deg, #2563EB 0%, #10B981 100%);
+}
+
+/* ===== OPTIONS ===== */
+.option {
+    background-color: #F8FAFC;
+    border-color: #CBD5E1;
+}
+
+.option:hover {
+    background-color: #F0F4FF;
+    border-color: #2563EB;
+}
+
+.option.selected {
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%);
+    border-color: #2563EB;
+    color: #2563EB;
+}
+
+/* ===== TOGGLE SWITCH ===== */
+.toggle-switch-inner:before {
+    background-color: #22C55E;
+}
+
+.toggle-switch-inner:after {
+    background-color: #EF4444;
+}
+
+/* ===== STATUS COLORS ===== */
+.admin-message.success {
+    background-color: #F0FDF4;
+    color: #065F46;
+    border-left-color: #22C55E;
+}
+
+.admin-message.error {
+    background-color: #FEF2F2;
+    color: #7F1D1D;
+    border-left-color: #EF4444;
+}
+
+/* ===== LINKS ===== */
+a {
+    color: #2563EB;
+}
+
+a:hover {
+    color: #1D4ED8;
+}
+
+/* Professional Blue Theme - Complete */

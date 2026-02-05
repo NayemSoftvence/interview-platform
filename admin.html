@@ -4,8 +4,11 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <title>Admin Portal - Flutter Mock Interview Platform</title>
-    <link rel="stylesheet" href="css/style-modern.css" />
+    <link rel="stylesheet" href="css/style-modern.css?v=2.1" />
 </head>
 
 <body>
@@ -30,7 +33,7 @@
                         <input type="password" id="adminPassword" class="form-control" required />
                     </div>
                     <button class="btn" id="loginBtn">Login</button>
-                    <a href="index.html" class="btn btn-outline"
+                    <a href="/" class="btn btn-outline"
                         style="text-align: center; text-decoration: none; display: inline-block;">Back to Main</a>
                     <div id="loginError" class="error-message"></div>
                 </div>
@@ -60,7 +63,7 @@
                             <span>Results</span>
                         </a>
                     </nav>
-                    <button class="btn btn-outline logout-btn" id="logoutBtn">Logout</button>
+                    <button class="btn btn-outline logout-btn" id="logoutBtn" style="display: none; margin-top: auto; width: 100%;">Logout</button>
                 </div>
 
                 <div class="admin-content">
@@ -108,6 +111,22 @@
                     <div class="admin-screen" id="settingsScreen">
                         <h2>Interview Settings</h2>
                         <div class="admin-form-container">
+                            <!-- Theme Selector -->
+                            <div class="form-section">
+                                <h3>Dashboard Theme</h3>
+                                <div class="form-group">
+                                    <label for="themeSelector">Select Theme</label>
+                                    <select id="themeSelector" class="form-control">
+                                        <option value="style-modern">Default (Indigo Modern)</option>
+                                        <option value="theme-professional-blue">Professional Blue</option>
+                                        <option value="theme-modern-violet">Modern Violet</option>
+                                        <option value="theme-teal-coral">Teal & Coral</option>
+                                        <option value="theme-dark-mode">Dark Mode Modern</option>
+                                    </select>
+                                    <p class="help-text">Select your preferred dashboard theme. Changes appear immediately.</p>
+                                </div>
+                            </div>
+
                             <!-- Home Screen Text Control -->
                             <div class="form-section">
                                 <h3>Home Screen Content</h3>

@@ -1,0 +1,214 @@
+/* ===== Theme: Modern Violet ===== */
+/* Trendy, innovative, startup vibe */
+
+:root {
+    /* Primary Colors */
+    --primary: #7C3AED;
+    --primary-dark: #6D28D9;
+    --secondary: #A78BFA;
+    --accent: #EC4899;
+    
+    /* Background & Surface */
+    --background: #F5F3FF;
+    --light: #F3E8FF;
+    --lighter: #EDE9FE;
+    --border: #DDD6FE;
+    
+    /* Surface */
+    --surface: #FFFFFF;
+    
+    /* Text Colors */
+    --dark: #1E1B4B;
+    --text: #4C1D95;
+    --text-light: #6B7280;
+    
+    /* Status Colors */
+    --success: #22C55E;
+    --warning: #F59E0B;
+    --danger: #EF4444;
+    --info: #7C3AED;
+}
+
+/* ===== HEADER STYLES ===== */
+.header {
+    background: linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%);
+    color: white;
+}
+
+.header h1 {
+    color: white;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.header p {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* ===== BUTTON STYLES ===== */
+.btn {
+    background: linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%);
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.2);
+}
+
+.btn:hover {
+    box-shadow: 0 8px 20px rgba(124, 58, 237, 0.3);
+}
+
+.btn-outline {
+    border-color: #7C3AED;
+    color: #7C3AED;
+}
+
+.btn-outline:hover {
+    background: #7C3AED;
+}
+
+/* ===== ADMIN SIDEBAR ===== */
+.admin-sidebar {
+    background: linear-gradient(180deg, #A78BFA 0%, #7C3AED 100%);
+}
+
+.admin-nav .nav-item:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.admin-nav .nav-item.active {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+/* ===== FORM & INPUT STYLES ===== */
+.form-control {
+    border-color: #DDD6FE;
+    background: #F5F3FF;
+}
+
+.form-control:focus {
+    border-color: #7C3AED;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+}
+
+/* ===== ADMIN SCREEN HEADER ===== */
+.admin-screen h2 {
+    color: #1E1B4B;
+    border-bottom-color: #7C3AED;
+}
+
+/* ===== STAT CARDS ===== */
+.stat-card {
+    background: white;
+    border-color: #DDD6FE;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.stat-card:hover {
+    box-shadow: 0 10px 25px rgba(124, 58, 237, 0.1);
+}
+
+.stat-value {
+    color: #7C3AED;
+}
+
+/* ===== QUICK ACTION BUTTONS ===== */
+.quick-action-btn {
+    background: white;
+    border-color: #7C3AED;
+    color: #7C3AED;
+}
+
+.quick-action-btn:hover {
+    background: #7C3AED;
+    color: white;
+    box-shadow: 0 8px 20px rgba(124, 58, 237, 0.2);
+}
+
+/* ===== TABS ===== */
+.tab-btn {
+    color: #6B7280;
+}
+
+.tab-btn:hover,
+.tab-btn.active {
+    color: #7C3AED;
+    border-bottom-color: #7C3AED;
+}
+
+/* ===== FORM SECTION ===== */
+.form-section {
+    background: #F5F3FF;
+    border-color: #DDD6FE;
+}
+
+/* ===== QUESTION ITEM ===== */
+.question-item {
+    background: white;
+    border-color: #DDD6FE;
+}
+
+.question-item li.correct-option {
+    color: #22C55E;
+    background-color: #F0FDF4;
+}
+
+/* ===== RESULTS TABLE ===== */
+.results-table th {
+    background-color: #7C3AED;
+}
+
+.results-table th:hover {
+    background: #6D28D9;
+}
+
+/* ===== PROGRESS BAR ===== */
+.progress {
+    background: linear-gradient(90deg, #7C3AED 0%, #EC4899 100%);
+}
+
+/* ===== OPTIONS ===== */
+.option {
+    background-color: #F5F3FF;
+    border-color: #DDD6FE;
+}
+
+.option:hover {
+    background-color: #F3E8FF;
+    border-color: #7C3AED;
+}
+
+.option.selected {
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(236, 72, 153, 0.1) 100%);
+    border-color: #7C3AED;
+    color: #7C3AED;
+}
+
+/* ===== TOGGLE SWITCH ===== */
+.toggle-switch-inner:before {
+    background-color: #22C55E;
+}
+
+.toggle-switch-inner:after {
+    background-color: #EF4444;
+}
+
+/* ===== STATUS COLORS ===== */
+.admin-message.success {
+    background-color: #F0FDF4;
+    color: #065F46;
+    border-left-color: #22C55E;
+}
+
+.admin-message.error {
+    background-color: #FEF2F2;
+    color: #7F1D1D;
+    border-left-color: #EF4444;
+}
+
+/* ===== LINKS ===== */
+a {
+    color: #7C3AED;
+}
+
+a:hover {
+    color: #6D28D9;
+}
+
+/* Modern Violet Theme - Complete */

@@ -2,6 +2,47 @@
 
 let currentSort = { field: 'completion_date', direction: 'desc' };
 
+// ===== THEME MANAGEMENT =====
+
+function initThemeSelector() {
+    const themeSelector = document.getElementById('themeSelector');
+    if (!themeSelector) return;
+
+    // Load saved theme from localStorage
+    const savedTheme = localStorage.getItem('adminTheme') || 'style-modern';
+    themeSelector.value = savedTheme;
+    applyTheme(savedTheme);
+
+    // Add change event listener
+    themeSelector.addEventListener('change', function (e) {
+        const selectedTheme = e.target.value;
+        localStorage.setItem('adminTheme', selectedTheme);
+        applyTheme(selectedTheme);
+    });
+}
+
+function applyTheme(themeName) {
+    // Remove all existing theme links
+    const existingThemeLinks = document.querySelectorAll('link[data-theme]');
+    existingThemeLinks.forEach(link => link.remove());
+
+    // If not the default theme, add the theme CSS file
+    if (themeName !== 'style-modern') {
+        const themeLink = document.createElement('link');
+        themeLink.rel = 'stylesheet';
+        themeLink.href = `css/${themeName}.css?v=2.1`;
+        themeLink.dataset.theme = 'true';
+        document.head.appendChild(themeLink);
+    }
+    
+    // Store theme preference globally for other pages
+    localStorage.setItem('appTheme', themeName);
+    localStorage.setItem('adminTheme', themeName);
+
+    // Add cache busting parameter
+    console.log('Theme applied:', themeName);
+}
+
 // ===== ADMIN DASHBOARD NAVIGATION =====
 
 function switchAdminScreen(screenId) {
@@ -14,6 +55,8 @@ function switchAdminScreen(screenId) {
     const selectedScreen = document.getElementById(screenId);
     if (selectedScreen) {
         selectedScreen.classList.add('active');
+        // Scroll to top of the screen
+        selectedScreen.scrollTop = 0;
     }
 
     // Update navigation active state
@@ -75,6 +118,9 @@ function updateDashboardStats() {
 
 // Setup navigation event listeners
 document.addEventListener('DOMContentLoaded', function () {
+    // Initialize theme selector
+    initThemeSelector();
+
     // Navigation click handlers
     document.querySelectorAll('.nav-item').forEach(item => {
         item.addEventListener('click', function (e) {

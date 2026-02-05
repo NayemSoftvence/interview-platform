@@ -86,6 +86,11 @@ function adminLogin() {
             console.log('Login response:', result);
             if (result.success) {
                 showAdminPanel();
+                // Show logout button
+                const logoutBtn = document.getElementById('logoutBtn');
+                if (logoutBtn) logoutBtn.style.display = 'block';
+                // Initialize theme selector
+                initThemeSelector();
             } else {
                 document.getElementById('loginError').textContent = result.message || 'Invalid username or password';
             }
@@ -113,14 +118,29 @@ function logout() {
         credentials: 'same-origin',
         body: 'action=logout'
     }).catch(err => console.warn('Logout request failed', err)).finally(() => {
+        // Hide logout button
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) logoutBtn.style.display = 'none';
+        
         // Clear admin login form
         const adminUsername = document.getElementById('adminUsername');
         const adminPassword = document.getElementById('adminPassword');
         if (adminUsername) adminUsername.value = '';
         if (adminPassword) adminPassword.value = '';
+        
+        // Clear login error
+        const loginError = document.getElementById('loginError');
+        if (loginError) loginError.textContent = '';
 
-        // Redirect to admin login page (admin.html)
-        window.location.href = 'admin.html';
+        // Reset admin screen
+        const adminScreen = document.getElementById('adminScreen');
+        if (adminScreen) {
+            adminScreen.classList.remove('active');
+            adminScreen.style.display = 'none';
+        }
+        
+        const adminLoginScreen = document.getElementById('adminLoginScreen');
+        if (adminLoginScreen) adminLoginScreen.style.display = 'block';
     });
 }
 

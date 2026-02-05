@@ -1,0 +1,398 @@
+/* ===== Theme: Dark Mode Modern ===== */
+/* Sleek, tech-forward, premium feel */
+
+:root {
+    /* Primary Colors */
+    --primary: #3B82F6;
+    --primary-dark: #1E40AF;
+    --secondary: #60A5FA;
+    --accent: #06B6D4;
+    
+    /* Background & Surface */
+    --background: #0F172A;
+    --light: #1E293B;
+    --lighter: #334155;
+    --border: #475569;
+    
+    /* Surface */
+    --surface: #1E293B;
+    
+    /* Text Colors */
+    --dark: #F1F5F9;
+    --text: #E2E8F0;
+    --text-light: #94A3B8;
+    
+    /* Status Colors */
+    --success: #10B981;
+    --warning: #F59E0B;
+    --danger: #EF4444;
+    --info: #3B82F6;
+}
+
+/* ===== BODY & CONTAINER ===== */
+body {
+    background: #0F172A;
+    color: #E2E8F0;
+}
+
+.container {
+    background: #0F172A;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+/* ===== HEADER STYLES ===== */
+.header {
+    background: linear-gradient(135deg, #1E3A8A 0%, #0F172A 100%);
+    color: white;
+    border-bottom: 1px solid #334155;
+}
+
+.header h1 {
+    color: white;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.header p {
+    color: #94A3B8;
+}
+
+/* ===== BUTTON STYLES ===== */
+.btn {
+    background: linear-gradient(135deg, #3B82F6 0%, #1E40AF 100%);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.btn:hover {
+    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+}
+
+.btn-outline {
+    border-color: #3B82F6;
+    color: #3B82F6;
+    background: transparent;
+}
+
+.btn-outline:hover {
+    background: #3B82F6;
+    color: white;
+}
+
+/* ===== ADMIN SIDEBAR ===== */
+.admin-sidebar {
+    background: linear-gradient(180deg, #1E293B 0%, #0F172A 100%);
+    border-right: 1px solid #334155;
+}
+
+.admin-logo {
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+.admin-nav .nav-item {
+    color: #94A3B8;
+}
+
+.admin-nav .nav-item:hover {
+    background: rgba(59, 130, 246, 0.15);
+    color: #E2E8F0;
+}
+
+.admin-nav .nav-item.active {
+    background: rgba(59, 130, 246, 0.25);
+    color: #E2E8F0;
+    border-left-color: #3B82F6;
+}
+
+/* ===== CONTENT AREA ===== */
+.content,
+.admin-content {
+    background: #0F172A;
+    color: #E2E8F0;
+}
+
+.admin-screen h2 {
+    color: #F1F5F9;
+    border-bottom-color: #3B82F6;
+}
+
+/* ===== FORM & INPUT STYLES ===== */
+.form-control {
+    border-color: #475569;
+    background: #1E293B;
+    color: #E2E8F0;
+}
+
+.form-control::placeholder {
+    color: #94A3B8;
+}
+
+.form-control:focus {
+    border-color: #3B82F6;
+    background: #1E293B;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.form-group label {
+    color: #E2E8F0;
+}
+
+/* ===== STAT CARDS ===== */
+.stat-card {
+    background: #1E293B;
+    border-color: #334155;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.stat-card:hover {
+    background: #1E293B;
+    box-shadow: 0 10px 25px rgba(59, 130, 246, 0.15);
+    border-color: #475569;
+}
+
+.stat-label {
+    color: #94A3B8;
+}
+
+.stat-value {
+    color: #3B82F6;
+}
+
+.stat-unit {
+    color: #64748B;
+}
+
+/* ===== QUICK ACTION BUTTONS ===== */
+.quick-action-btn {
+    background: #1E293B;
+    border-color: #3B82F6;
+    color: #3B82F6;
+}
+
+.quick-action-btn:hover {
+    background: #3B82F6;
+    color: white;
+    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+}
+
+/* ===== TABS ===== */
+.section-tabs {
+    border-bottom-color: #334155;
+}
+
+.tab-btn {
+    color: #94A3B8;
+}
+
+.tab-btn:hover,
+.tab-btn.active {
+    color: #3B82F6;
+    border-bottom-color: #3B82F6;
+}
+
+/* ===== FORM SECTION ===== */
+.form-section {
+    background: #1E293B;
+    border-color: #334155;
+}
+
+.form-section h3 {
+    color: #E2E8F0;
+}
+
+/* ===== QUESTION ITEM ===== */
+.question-item {
+    background: #1E293B;
+    border-color: #334155;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.question-item:hover {
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+.question-item h4 {
+    color: #E2E8F0;
+}
+
+.question-item {
+    color: #E2E8F0;
+}
+
+.question-item li {
+    color: #CBD5E1;
+}
+
+.question-item li.correct-option {
+    color: #10B981;
+    background-color: rgba(16, 185, 129, 0.15);
+    border-color: #10B981;
+}
+
+/* ===== RESULTS TABLE ===== */
+.results-header {
+    background: #1E293B;
+    border-color: #334155;
+}
+
+.results-table th {
+    background-color: #1E3A8A;
+    color: white;
+}
+
+.results-table th:hover {
+    background: #1E40AF;
+}
+
+.results-table tr:hover {
+    background-color: #334155;
+}
+
+.results-table th,
+.results-table td {
+    border-bottom-color: #334155;
+    color: #E2E8F0;
+}
+
+/* ===== PROGRESS BAR ===== */
+.progress-bar {
+    background-color: #1E293B;
+}
+
+.progress {
+    background: linear-gradient(90deg, #3B82F6 0%, #06B6D4 100%);
+}
+
+/* ===== OPTIONS ===== */
+.options-container {
+    gap: 12px;
+}
+
+.option {
+    background-color: #1E293B;
+    border-color: #334155;
+    color: #E2E8F0;
+}
+
+.option:hover {
+    background-color: #334155;
+    border-color: #3B82F6;
+}
+
+.option.selected {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(6, 182, 212, 0.2) 100%);
+    border-color: #3B82F6;
+    color: #3B82F6;
+}
+
+/* ===== QUESTION STYLES ===== */
+.question {
+    color: #F1F5F9;
+}
+
+.question-number {
+    color: #3B82F6;
+}
+
+/* ===== TOGGLE SWITCH ===== */
+.toggle-switch-label {
+    border-color: #334155;
+    background: #1E293B;
+}
+
+.toggle-switch-inner:before {
+    background-color: #10B981;
+}
+
+.toggle-switch-inner:after {
+    background-color: #EF4444;
+}
+
+.toggle-switch-switch {
+    background: white;
+    border-color: #475569;
+}
+
+/* ===== STATUS COLORS ===== */
+.admin-message {
+    border-color: #334155;
+}
+
+.admin-message.success {
+    background-color: rgba(16, 185, 129, 0.15);
+    color: #86EFAC;
+    border-left-color: #10B981;
+}
+
+.admin-message.error {
+    background-color: rgba(239, 68, 68, 0.15);
+    color: #FCA5A5;
+    border-left-color: #EF4444;
+}
+
+/* ===== EXAM CLOSED MESSAGE ===== */
+.exam-closed-message {
+    background: linear-gradient(135deg, #1E293B 0%, rgba(59, 130, 246, 0.1) 100%);
+    border-color: #334155;
+}
+
+.exam-closed-message h2 {
+    color: #FCA5A5;
+}
+
+.exam-closed-message p {
+    color: #E2E8F0;
+}
+
+/* ===== LOGIN FORM ===== */
+.login-form,
+.student-form {
+    background: #1E293B;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    border: 1px solid #334155;
+}
+
+.error-message {
+    color: #FCA5A5;
+    background: rgba(239, 68, 68, 0.1);
+    border-color: #475569;
+}
+
+/* ===== RESULTS SUMMARY ===== */
+.results-summary {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(6, 182, 212, 0.1) 100%);
+    border-left-color: #3B82F6;
+}
+
+/* ===== HELP TEXT ===== */
+.help-text {
+    color: #94A3B8;
+}
+
+.help-text a {
+    color: #3B82F6;
+}
+
+/* ===== WARNING CONTENT ===== */
+.warning-content {
+    background-color: #1E293B;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+    color: #E2E8F0;
+}
+
+.warning-content h2 {
+    color: #FCA5A5;
+}
+
+.warning-content p {
+    color: #CBD5E1;
+}
+
+/* ===== LINKS ===== */
+a {
+    color: #3B82F6;
+}
+
+a:hover {
+    color: #60A5FA;
+}
+
+/* Dark Mode Modern Theme - Complete */
