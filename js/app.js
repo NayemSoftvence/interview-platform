@@ -150,6 +150,20 @@ async function loadAndApplyWelcomeContent() {
         if (result.success && result.welcome_content) {
             const content = result.welcome_content;
             
+            // Store and apply admin-chosen theme
+            if (result.admin_theme) {
+                localStorage.setItem('appTheme', result.admin_theme);
+                if (result.admin_theme !== 'style-modern') {
+                    // Remove existing theme link
+                    document.querySelectorAll('link[data-theme]').forEach(l => l.remove());
+                    const themeLink = document.createElement('link');
+                    themeLink.rel = 'stylesheet';
+                    themeLink.href = `css/${result.admin_theme}.css?v=2.1`;
+                    themeLink.dataset.theme = 'true';
+                    document.head.appendChild(themeLink);
+                }
+            }
+            
             // Update welcome screen title
             const titleEl = document.querySelector('#welcomeScreen h2');
             if (titleEl && content.title) {

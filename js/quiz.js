@@ -268,15 +268,15 @@ async function endInterview() {
     const totalQuestions = quizState.questions.length;
     const percentage = parseFloat(((score / totalQuestions) * 100).toFixed(2));
     const answers = JSON.stringify(quizState.userAnswers);
-    
+
     // Display results immediately (before saving to ensure they show)
     const finalScoreEl = document.getElementById('finalScore');
     const resultMessageEl = document.getElementById('resultMessage');
-    
+
     if (finalScoreEl) {
         finalScoreEl.textContent = `${score}/${totalQuestions}`;
     }
-    
+
     // Set result message based on performance
     let message = "You need more practice. Review Flutter concepts and try again.";
     if (percentage >= 80) {
@@ -286,7 +286,7 @@ async function endInterview() {
     } else if (percentage >= 40) {
         message = "Not bad! Keep studying Flutter to improve.";
     }
-    
+
     if (resultMessageEl) {
         resultMessageEl.textContent = message;
     }
@@ -295,17 +295,45 @@ async function endInterview() {
     showScreen('resultsScreen');
 
     try {
+        // Validate student ID
+        if (!window.currentStudentId) {
+            console.error('Cannot save results: Student ID is missing');
+            return;
+        }
+
+        console.log(`Saving results for student ${window.currentStudentId}...`);
+        console.log(`Score: ${score}/${totalQuestions}, Percentage: ${percentage}%`);
+
         // Save results to database asynchronously
+        const body = `action=save&student_id=${window.currentStudentId}&score=${score}&total_questions=${totalQuestions}&percentage=${percentage}&answers=${encodeURIComponent(answers)}`;
+        console.log('Request body:', body);
+
         const response = await fetch('php/results.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: `action=save&student_id=${window.currentStudentId}&score=${score}&total_questions=${totalQuestions}&percentage=${percentage}&answers=${encodeURIComponent(answers)}`
+            body: body
         });
 
-        const result = await response.json();
+        console.log('Response status:', response.status);
 
-        if (!result.success) {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log('Server response:', result);
+
+        if (result.success) {
+            console.log('Results saved successfully:', result.message);
+            try {
+                // Signal other tabs (admin) that results were updated
+                localStorage.setItem('results_updated', String(Date.now()));
+            } catch (e) {
+                console.warn('Unable to write results_updated to localStorage', e);
+            }
+        } else {
             console.error('Failed to save results:', result.message);
+            // Optionally show to user if it's critical
         }
     } catch (error) {
         console.error('Error saving results:', error);

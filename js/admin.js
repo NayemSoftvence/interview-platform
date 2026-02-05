@@ -8,16 +8,44 @@ function initThemeSelector() {
     const themeSelector = document.getElementById('themeSelector');
     if (!themeSelector) return;
 
-    // Load saved theme from localStorage
-    const savedTheme = localStorage.getItem('adminTheme') || 'style-modern';
-    themeSelector.value = savedTheme;
-    applyTheme(savedTheme);
+    // Load saved theme from database first, fall back to localStorage
+    fetch('php/settings.php?action=get_welcome_content', { credentials: 'same-origin' })
+        .then(res => res.json())
+        .then(result => {
+            const dbTheme = result.admin_theme || 'style-modern';
+            const localTheme = localStorage.getItem('adminTheme') || dbTheme;
+            const currentTheme = localTheme || 'style-modern';
+            themeSelector.value = currentTheme;
+            applyTheme(currentTheme);
+        })
+        .catch(() => {
+            const savedTheme = localStorage.getItem('adminTheme') || 'style-modern';
+            themeSelector.value = savedTheme;
+            applyTheme(savedTheme);
+        });
 
     // Add change event listener
     themeSelector.addEventListener('change', function (e) {
         const selectedTheme = e.target.value;
         localStorage.setItem('adminTheme', selectedTheme);
         applyTheme(selectedTheme);
+        
+        // Save theme to database
+        fetch('php/settings.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            credentials: 'same-origin',
+            body: `action=save_admin_theme&theme=${encodeURIComponent(selectedTheme)}`
+        })
+        .then(res => res.json())
+        .then(result => {
+            if (result.success) {
+                // Broadcast theme change to other tabs
+                localStorage.setItem('adminThemeUpdated', String(Date.now()));
+                showAdminMessage('Theme saved and will apply to all devices', 'success');
+            }
+        })
+        .catch(err => console.error('Error saving theme:', err));
     });
 }
 
@@ -72,6 +100,11 @@ function switchAdminScreen(screenId) {
         updateDashboardStats();
     } else if (screenId === 'resultsScreen') {
         renderResultsTable();
+        // Auto-refresh results every 3 seconds
+        if (window.resultsRefreshInterval) {
+            clearInterval(window.resultsRefreshInterval);
+        }
+        window.resultsRefreshInterval = setInterval(renderResultsTable, 3000);
     } else if (screenId === 'questionsScreen') {
         // Ensure tabs are initialized/scoped, then render list
         initQuestionTabs();
@@ -151,6 +184,33 @@ document.addEventListener('DOMContentLoaded', function () {
     if (saveWelcomeContentBtn) {
         saveWelcomeContentBtn.addEventListener('click', saveWelcomeContent);
     }
+
+    // Listen for results updates from other tabs (students saving results)
+    window.addEventListener('storage', function (e) {
+        if (!e.key) return;
+        if (e.key === 'results_updated') {
+            // Refresh dashboard counts and results table if visible
+            updateDashboardStats();
+            // If currently on results screen, refresh table
+            const resultsScreen = document.getElementById('resultsScreen');
+            if (resultsScreen && resultsScreen.classList.contains('active')) {
+                renderResultsTable();
+            }
+        }
+        // Listen for theme updates from other tabs
+        if (e.key === 'adminThemeUpdated') {
+            // Reload theme from DB
+            fetch('php/settings.php?action=get_welcome_content', { credentials: 'same-origin' })
+                .then(res => res.json())
+                .then(result => {
+                    const dbTheme = result.admin_theme || 'style-modern';
+                    const themeSelector = document.getElementById('themeSelector');
+                    if (themeSelector) themeSelector.value = dbTheme;
+                    applyTheme(dbTheme);
+                })
+                .catch(err => console.error('Error syncing theme:', err));
+        }
+    });
 });
 
 // Initialize tab behavior specifically for the questions section.
@@ -463,9 +523,24 @@ async function renderResultsTable() {
             body: `action=get_all&sort_field=${currentSort.field}&sort_direction=${currentSort.direction}`
         });
 
+        // If server returns unauthorized, stop auto-refresh and show login
+        if (!response.ok) {
+            if (response.status === 401) {
+                // Admin session expired or not logged in
+                if (window.resultsRefreshInterval) {
+                    clearInterval(window.resultsRefreshInterval);
+                    window.resultsRefreshInterval = null;
+                }
+                showAdminMessage('Admin session required. Please log in.', 'error');
+                // Show login screen
+                if (typeof showScreen === 'function') showScreen('adminLoginScreen');
+            }
+            throw new Error('Failed to fetch results: ' + response.status);
+        }
+
         const results = await response.json();
 
-        if (results.length === 0) {
+        if (!Array.isArray(results) || results.length === 0) {
             resultsTableContainer.innerHTML = '<p>No student results yet.</p>';
             return;
         }
@@ -674,6 +749,14 @@ function initializeAdminPanel() {
                 interviewTimeInput.value = '30'; // Default fallback
             });
     }
+
+    // Start auto-refresh of results immediately when admin panel loads
+    // This ensures new results appear in real-time even if admin isn't on Results tab
+    if (window.resultsRefreshInterval) {
+        clearInterval(window.resultsRefreshInterval);
+    }
+    renderResultsTable();
+    window.resultsRefreshInterval = setInterval(renderResultsTable, 3000);
 }
 
 async function loadSettings() {

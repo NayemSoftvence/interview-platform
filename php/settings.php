@@ -57,8 +57,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if ($action === 'get_welcome_content') {
         $conn = getDBConnection();
 
-        // Get the setting
-        $result = $conn->query("SELECT welcome_title, welcome_description, welcome_instructions FROM settings WHERE id = 1");
+        // Ensure theme column exists
+        @$conn->query("ALTER TABLE settings ADD COLUMN admin_theme VARCHAR(100) DEFAULT 'style-modern'");
+
+        // Get the setting including theme
+        $result = $conn->query("SELECT welcome_title, welcome_description, welcome_instructions, admin_theme FROM settings WHERE id = 1");
 
         if ($result && $result->num_rows > 0) {
             $row = $result->fetch_assoc();
@@ -68,7 +71,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     'title' => $row['welcome_title'] ?: '',
                     'description' => $row['welcome_description'] ?: '',
                     'instructions' => $row['welcome_instructions'] ?: ''
-                ]
+                ],
+                'admin_theme' => $row['admin_theme'] ?: 'style-modern'
             ]);
         } else {
             echo json_encode(['success' => false, 'message' => 'No welcome content found']);
@@ -154,6 +158,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['success' => true, 'message' => 'Welcome content saved']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Failed to save welcome content']);
+        }
+
+        $stmt->close();
+        $conn->close();
+        exit;
+    }
+
+    if ($action === 'save_admin_theme') {
+        $theme = $_POST['theme'] ?? 'style-modern';
+
+        // Validate theme name (prevent injection)
+        $allowed_themes = ['style-modern', 'theme-professional-blue', 'theme-modern-violet', 'theme-teal-coral', 'theme-dark-mode'];
+        if (!in_array($theme, $allowed_themes)) {
+            echo json_encode(['success' => false, 'message' => 'Invalid theme']);
+            exit;
+        }
+
+        $conn = getDBConnection();
+        
+        // Ensure column exists
+        @$conn->query("ALTER TABLE settings ADD COLUMN admin_theme VARCHAR(100) DEFAULT 'style-modern'");
+
+        // Update theme
+        $sql = "UPDATE settings SET admin_theme = ? WHERE id = 1";
+        
+        $stmt = $conn->prepare($sql);
+        
+        if (!$stmt) {
+            echo json_encode(['success' => false, 'message' => 'Database error: ' . $conn->error]);
+            $conn->close();
+            exit;
+        }
+        
+        $stmt->bind_param('s', $theme);
+
+        if ($stmt->execute()) {
+            echo json_encode(['success' => true, 'message' => 'Theme saved', 'theme' => $theme]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to save theme']);
         }
 
         $stmt->close();

@@ -20,6 +20,31 @@
 
         <div class="content admin-dashboard">
 
+            <div class="admin-sidebar">
+                    <div class="admin-logo">
+                        <h3>Admin Dashboard</h3>
+                    </div>
+                    <nav class="admin-nav">
+                        <a href="#" class="nav-item active" data-screen="dashboardHome">
+                            <span class="nav-icon">📊</span>
+                            <span>Dashboard</span>
+                        </a>
+                        <a href="#" class="nav-item" data-screen="settingsScreen">
+                            <span class="nav-icon">⏱️</span>
+                            <span>Settings</span>
+                        </a>
+                        <a href="#" class="nav-item" data-screen="questionsScreen">
+                            <span class="nav-icon">❓</span>
+                            <span>Questions</span>
+                        </a>
+                        <a href="#" class="nav-item" data-screen="resultsScreen">
+                            <span class="nav-icon">📈</span>
+                            <span>Results</span>
+                        </a>
+                        <button class="btn btn-outline logout-btn" id="logoutBtn" style="width: 100%; margin-top: 16px;">Logout</button>
+                    </nav>
+                </div>
+
             <div class="screen active" id="adminLoginScreen">
                 <br> <br> <br> <br>
 
@@ -41,31 +66,6 @@
 
             <!-- Admin Dashboard -->
             <div class="screen" id="adminScreen">
-                <div class="admin-sidebar">
-                    <div class="admin-logo">
-                        <h3>Admin Dashboard</h3>
-                    </div>
-                    <nav class="admin-nav">
-                        <a href="#" class="nav-item active" data-screen="dashboardHome">
-                            <span class="nav-icon">📊</span>
-                            <span>Dashboard</span>
-                        </a>
-                        <a href="#" class="nav-item" data-screen="settingsScreen">
-                            <span class="nav-icon">⏱️</span>
-                            <span>Settings</span>
-                        </a>
-                        <a href="#" class="nav-item" data-screen="questionsScreen">
-                            <span class="nav-icon">❓</span>
-                            <span>Questions</span>
-                        </a>
-                        <a href="#" class="nav-item" data-screen="resultsScreen">
-                            <span class="nav-icon">📈</span>
-                            <span>Results</span>
-                        </a>
-                    </nav>
-                    <button class="btn btn-outline logout-btn" id="logoutBtn" style="display: none; margin-top: auto; width: 100%;">Logout</button>
-                </div>
-
                 <div class="admin-content">
                     <div id="adminMessage" class="admin-message" role="status" aria-live="polite"></div>
 
@@ -123,7 +123,8 @@
                                         <option value="theme-teal-coral">Teal & Coral</option>
                                         <option value="theme-dark-mode">Dark Mode Modern</option>
                                     </select>
-                                    <p class="help-text">Select your preferred dashboard theme. Changes appear immediately.</p>
+                                    <p class="help-text">Select your preferred dashboard theme. Changes appear
+                                        immediately.</p>
                                 </div>
                             </div>
 
@@ -132,15 +133,18 @@
                                 <h3>Home Screen Content</h3>
                                 <div class="form-group">
                                     <label for="welcomeTitle">Welcome Title</label>
-                                    <input type="text" id="welcomeTitle" class="form-control" placeholder="Enter welcome title" />
+                                    <input type="text" id="welcomeTitle" class="form-control"
+                                        placeholder="Enter welcome title" />
                                 </div>
                                 <div class="form-group">
                                     <label for="welcomeDescription">Welcome Description</label>
-                                    <textarea id="welcomeDescription" class="form-control" rows="4" placeholder="Enter welcome description"></textarea>
+                                    <textarea id="welcomeDescription" class="form-control" rows="4"
+                                        placeholder="Enter welcome description"></textarea>
                                 </div>
                                 <div class="form-group">
                                     <label for="welcomeInstructions">Instructions (comma-separated)</label>
-                                    <textarea id="welcomeInstructions" class="form-control" rows="5" placeholder="Enter instructions, one per line"></textarea>
+                                    <textarea id="welcomeInstructions" class="form-control" rows="5"
+                                        placeholder="Enter instructions, one per line"></textarea>
                                 </div>
                                 <button class="btn btn-primary" id="saveWelcomeContentBtn">Save Welcome Content</button>
                                 <div id="welcomeContentMessage" class="admin-message"></div>
@@ -257,6 +261,12 @@
     <script src="js/admin.js"></script>
     <script src="js/app.js"></script>
     <script>
+        // Hide admin screen initially - sidebar is hidden by default via CSS
+        (function hideInitially() {
+            const adminScreen = document.getElementById('adminScreen');
+            if (adminScreen) adminScreen.style.display = 'none';
+        });
+
         // Check session on page load to maintain admin state
         (async function checkAdminSession() {
             try {

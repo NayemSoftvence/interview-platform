@@ -23,6 +23,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $percentage = $_POST['percentage'] ?? 0;
         $answers = $_POST['answers'] ?? '[]';
 
+        // Debug logging
+        error_log("Save attempt - student_id: $student_id, score: $score, total: $total_questions, percentage: $percentage");
+
         if (!$student_id || !$total_questions) {
             echo json_encode(['success' => false, 'message' => 'Invalid student or question data']);
             exit;
@@ -48,22 +51,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $student_phone = $student_row['phone'];
         $student_stmt->close();
 
-        // Check if someone with the same email or phone already submitted results
-        // This prevents the same person from submitting multiple times using different student IDs
+        // Check if this student already submitted results (same student_id)
         $check_stmt = $conn->prepare(
             "SELECT r.id FROM results r 
-             JOIN students s ON r.student_id = s.id 
-             WHERE (s.email = ? OR s.phone = ?) 
+             WHERE r.student_id = ? 
              LIMIT 1"
         );
-        $check_stmt->bind_param("ss", $student_email, $student_phone);
+        $check_stmt->bind_param("i", $student_id);
         $check_stmt->execute();
         $check_result = $check_stmt->get_result();
 
         if ($check_result->num_rows > 0) {
-            // Duplicate submission detected (same email or phone)
-            echo json_encode(['success' => true, 'message' => 'This email or phone number has already submitted results']);
+            // Update existing result (allow retakes)
             $check_stmt->close();
+            $update_stmt = $conn->prepare(
+                "UPDATE results SET score = ?, total_questions = ?, percentage = ?, answers = ?, completion_date = CURRENT_TIMESTAMP 
+                 WHERE student_id = ?"
+            );
+            $update_stmt->bind_param("iidsi", $score, $total_questions, $percentage, $answers, $student_id);
+            
+            if ($update_stmt->execute()) {
+                echo json_encode(['success' => true, 'message' => 'Result updated successfully']);
+            } else {
+                $error = $conn->error ?: 'Unknown error';
+                error_log("Results update error: " . $error);
+                echo json_encode(['success' => false, 'message' => 'Failed to update results: ' . $error]);
+            }
+            $update_stmt->close();
             $conn->close();
             exit;
         }
@@ -76,7 +90,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($stmt->execute()) {
             echo json_encode(['success' => true, 'message' => 'Result saved successfully']);
         } else {
-            echo json_encode(['success' => false, 'message' => 'Failed to save results: ' . $stmt->error]);
+            $error = $conn->error ?: 'Unknown error';
+            error_log("Results save error: " . $error);
+            echo json_encode(['success' => false, 'message' => 'Failed to save results: ' . $error]);
         }
 
         $stmt->close();
@@ -111,6 +127,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     } elseif ($action === 'clear_all') {
         $conn = getDBConnection();
+        $engine = $_ENV['DB_ENGINE'] ?? 'mysql';
 
         // Start transaction
         $conn->begin_transaction();
@@ -124,9 +141,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt2 = $conn->prepare("DELETE FROM students");
             $stmt2->execute();
 
-            // Reset auto increment
-            $conn->query("ALTER TABLE results AUTO_INCREMENT = 1");
-            $conn->query("ALTER TABLE students AUTO_INCREMENT = 1");
+            // Reset auto increment - engine specific
+            if ($engine === 'sqlite') {
+                $conn->query("DELETE FROM sqlite_sequence WHERE name='results'");
+                $conn->query("DELETE FROM sqlite_sequence WHERE name='students'");
+            } else {
+                $conn->query("ALTER TABLE results AUTO_INCREMENT = 1");
+                $conn->query("ALTER TABLE students AUTO_INCREMENT = 1");
+            }
 
             $conn->commit();
             echo json_encode(['success' => true, 'message' => 'All results cleared successfully']);

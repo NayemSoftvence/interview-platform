@@ -32,8 +32,9 @@ async function registerStudent() {
         const result = await response.json();
 
         if (result.success) {
-            // Store student ID for later use
+            // Store student ID for later use (persist across refreshes)
             window.currentStudentId = result.student_id;
+            localStorage.setItem('currentStudentId', result.student_id);
             startInterview();
         } else {
             showRegistrationError(result.message);
@@ -86,9 +87,6 @@ function adminLogin() {
             console.log('Login response:', result);
             if (result.success) {
                 showAdminPanel();
-                // Show logout button
-                const logoutBtn = document.getElementById('logoutBtn');
-                if (logoutBtn) logoutBtn.style.display = 'block';
                 // Initialize theme selector
                 initThemeSelector();
             } else {
@@ -102,6 +100,12 @@ function adminLogin() {
 }
 
 function showAdminPanel() {
+    // Show sidebar and admin screen
+    const sidebar = document.querySelector('.admin-sidebar');
+    if (sidebar) sidebar.classList.add('visible');
+    const adminScreen = document.getElementById('adminScreen');
+    if (adminScreen) adminScreen.style.display = 'flex';
+    
     showScreen('adminScreen');
     initializeAdminPanel();
     // Load dashboard stats immediately
@@ -111,36 +115,39 @@ function showAdminPanel() {
 }
 
 function logout() {
-    // Call server to destroy admin session (best-effort)
+    // Call server to destroy admin session
     fetch('php/admin_auth.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         credentials: 'same-origin',
         body: 'action=logout'
     }).catch(err => console.warn('Logout request failed', err)).finally(() => {
-        // Hide logout button
-        const logoutBtn = document.getElementById('logoutBtn');
-        if (logoutBtn) logoutBtn.style.display = 'none';
-        
+        // Clear student data
+        localStorage.removeItem('currentStudentId');
+        window.currentStudentId = null;
+
         // Clear admin login form
         const adminUsername = document.getElementById('adminUsername');
         const adminPassword = document.getElementById('adminPassword');
         if (adminUsername) adminUsername.value = '';
         if (adminPassword) adminPassword.value = '';
-        
+
         // Clear login error
         const loginError = document.getElementById('loginError');
         if (loginError) loginError.textContent = '';
-
-        // Reset admin screen
+        // Hide admin panel and show only login screen
+        const sidebar = document.querySelector('.admin-sidebar');
+        if (sidebar) sidebar.classList.remove('visible');
         const adminScreen = document.getElementById('adminScreen');
-        if (adminScreen) {
-            adminScreen.classList.remove('active');
-            adminScreen.style.display = 'none';
-        }
+        if (adminScreen) adminScreen.style.display = 'none';
         
-        const adminLoginScreen = document.getElementById('adminLoginScreen');
-        if (adminLoginScreen) adminLoginScreen.style.display = 'block';
+        // Show login screen
+        if (typeof showScreen === 'function') {
+            showScreen('adminLoginScreen');
+        } else {
+            const adminLoginScreen = document.getElementById('adminLoginScreen');
+            if (adminLoginScreen) adminLoginScreen.classList.add('active');
+        }
     });
 }
 
@@ -165,5 +172,11 @@ function initLoginForm() {
                 adminLogin();
             }
         });
+    }
+
+    // Wire up logout button
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', logout);
     }
 }

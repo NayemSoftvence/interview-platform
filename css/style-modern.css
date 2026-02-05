@@ -109,7 +109,9 @@ body {
     background: white;
 }
 
-.content, .admin-content, .admin-dashboard {
+.content,
+.admin-content,
+.admin-dashboard {
     min-height: 0;
 }
 
@@ -131,6 +133,25 @@ body {
     flex-direction: row;
     align-items: stretch;
     gap: 0;
+}
+
+/* Admin dashboard layout - sidebar and content side-by-side */
+.admin-dashboard {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+}
+
+/* Sidebar hidden by default - shown only after session check confirms auth */
+.admin-sidebar {
+    display: none !important;
+    width: 260px;
+    min-width: 260px;
+    max-width: 260px;
+}
+
+.admin-sidebar.visible {
+    display: flex !important;
 }
 
 /* ===== BUTTONS ===== */
@@ -470,7 +491,6 @@ textarea.form-control {
     background: linear-gradient(180deg, var(--secondary) 0%, var(--primary) 100%);
     color: white;
     padding: 24px 16px;
-    display: flex;
     flex-direction: column;
     gap: 24px;
     height: 100vh;
@@ -535,9 +555,23 @@ textarea.form-control {
     min-width: 20px;
 }
 
-.logout-btn {
+.admin-sidebar-footer {
     margin-top: auto;
-    justify-self: flex-end;
+    padding: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.logout-btn {
+    width: 100%;
+    background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%) !important;
+    border: none !important;
+    color: white !important;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3) !important;
+}
+
+.logout-btn:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4) !important;
 }
 
 .admin-content {
@@ -729,6 +763,8 @@ textarea.form-control {
     display: flex;
     flex-direction: column;
     gap: 20px;
+    padding-bottom: 80px;
+    /* Increased spacing as requested */
 }
 
 .form-section {
@@ -1023,6 +1059,7 @@ textarea.form-control {
         opacity: 0;
         transform: translateY(8px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -1034,6 +1071,7 @@ textarea.form-control {
         opacity: 0;
         transform: translateY(20px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);

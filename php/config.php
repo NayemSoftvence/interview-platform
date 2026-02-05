@@ -18,10 +18,12 @@ mysqli_report(MYSQLI_REPORT_OFF);
  */
 class SQLiteCompatiblemysqli_stmt {
     private $stmt;
+    private $db;
     public $error;
     
-    public function __construct($stmt) {
+    public function __construct($stmt, $db = null) {
         $this->stmt = $stmt;
+        $this->db = $db;
     }
     
     public function bind_param($types, ...$params) {
@@ -32,15 +34,33 @@ class SQLiteCompatiblemysqli_stmt {
     }
     
     public function execute() {
-        return $this->stmt->execute() !== false;
+        $res = $this->stmt->execute();
+        if ($res === false) {
+            $this->error = "Execute failed";
+            return false;
+        }
+        // Update parent connection's insert_id
+        if ($this->db) {
+            $this->db->setInsertId($this->db->lastInsertRowID());
+        }
+        return true;
     }
     
     public function get_result() {
-        return new SQLiteCompatiblemysqli_result($this->stmt->execute());
+        $res = $this->stmt->execute();
+        if ($res === false) {
+            $this->error = "Get result failed";
+            return false;
+        }
+        // Update parent connection's insert_id
+        if ($this->db) {
+            $this->db->setInsertId($this->db->lastInsertRowID());
+        }
+        return new SQLiteCompatiblemysqli_result($res);
     }
     
     public function close() {
-        return $this->stmt->close();
+        return @$this->stmt->close();
     }
 }
 
@@ -78,6 +98,7 @@ class SQLiteCompatiblemysqli {
     public function __construct($path) {
         try {
             $this->db = new SQLite3($path);
+            $this->insert_id = null;
         } catch (Exception $e) {
             $this->connect_error = $e->getMessage();
         }
@@ -93,12 +114,17 @@ class SQLiteCompatiblemysqli {
     }
 
     public function prepare($sql) {
-        $stmt = $this->db->prepare($sql);
-        if (!$stmt) {
-            $this->error = $this->db->lastErrorMsg();
+        try {
+            $stmt = $this->db->prepare($sql);
+            if (!$stmt) {
+                $this->error = $this->db->lastErrorMsg();
+                return false;
+            }
+            return new SQLiteCompatiblemysqli_stmt($stmt, $this);
+        } catch (Exception $e) {
+            $this->error = $e->getMessage();
             return false;
         }
-        return new SQLiteCompatiblemysqli_stmt($stmt);
     }
 
     public function close() {
@@ -108,9 +134,17 @@ class SQLiteCompatiblemysqli {
     public function begin_transaction() { $this->db->exec('BEGIN TRANSACTION'); }
     public function commit() { $this->db->exec('COMMIT'); }
     public function rollback() { $this->db->exec('ROLLBACK'); }
+    
+    public function lastInsertRowID() {
+        return $this->db->lastInsertRowID();
+    }
+    
+    public function setInsertId($id) {
+        $this->insert_id = $id;
+    }
 
     public function __get($name) {
-        if ($name === 'insert_id') return $this->db->lastInsertRowID();
+        if ($name === 'insert_id') return $this->insert_id;
         return null;
     }
 }

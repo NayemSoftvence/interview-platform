@@ -7,21 +7,21 @@
     --primary-dark: #1E40AF;
     --secondary: #60A5FA;
     --accent: #06B6D4;
-    
+
     /* Background & Surface */
     --background: #0F172A;
     --light: #1E293B;
     --lighter: #334155;
     --border: #475569;
-    
+
     /* Surface */
     --surface: #1E293B;
-    
+
     /* Text Colors */
     --dark: #F1F5F9;
     --text: #E2E8F0;
     --text-light: #94A3B8;
-    
+
     /* Status Colors */
     --success: #10B981;
     --warning: #F59E0B;
@@ -176,16 +176,26 @@ body {
 /* ===== TABS ===== */
 .section-tabs {
     border-bottom-color: #334155;
+    background: #1E293B;
+    padding: 0 10px;
+    border-radius: 8px 8px 0 0;
 }
 
 .tab-btn {
     color: #94A3B8;
+    background: transparent;
 }
 
 .tab-btn:hover,
 .tab-btn.active {
     color: #3B82F6;
     border-bottom-color: #3B82F6;
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.tab-content {
+    background: #1E293B;
+    color: #E2E8F0;
 }
 
 /* ===== FORM SECTION ===== */
