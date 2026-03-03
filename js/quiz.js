@@ -40,15 +40,43 @@ window.addEventListener('storage', (event) => {
     }
 });
 
+// Show an in-page error on the registration / welcome screen
+function showStartError(msg) {
+    const errEl = document.getElementById('registrationError');
+    if (errEl) {
+        errEl.textContent = msg;
+        errEl.style.display = 'block';
+    }
+    // Make sure the user is on a screen they can see
+    const regScreen = document.getElementById('studentRegisterScreen');
+    const welcomeScreen = document.getElementById('welcomeScreen');
+    if (regScreen && regScreen.classList.contains('active')) {
+        // Stay on reg screen – the error el is visible there
+        return;
+    }
+    if (welcomeScreen) showScreen('welcomeScreen');
+}
+
 // Start the interview
 async function startInterview() {
     try {
         // Load questions from database
         const response = await fetch('php/questions.php');
-        quizState.questions = await response.json();
+        if (!response.ok) {
+            showStartError('Server error loading questions. Please try again.');
+            return;
+        }
+        let parsed;
+        try {
+            parsed = await response.json();
+        } catch (_) {
+            showStartError('Invalid response from server. Please contact the administrator.');
+            return;
+        }
+        quizState.questions = parsed;
 
-        if (quizState.questions.length === 0) {
-            alert('No questions available. Please contact administrator.');
+        if (!Array.isArray(quizState.questions) || quizState.questions.length === 0) {
+            showStartError('No questions are available for this quiz. The administrator needs to activate a question set that contains at least one question.');
             return;
         }
 
@@ -84,7 +112,7 @@ async function startInterview() {
         showQuestion(quizState.currentQuestionIndex);
         showScreen('quizScreen');
     } catch (error) {
-        alert('Error loading questions: ' + error.message);
+        showStartError('Error starting interview: ' + error.message);
     }
 }
 
@@ -278,13 +306,13 @@ async function endInterview() {
     }
 
     // Set result message based on performance
-    let message = "You need more practice. Review Flutter concepts and try again.";
+    let message = "You need more practice. Review the topics and try again.";
     if (percentage >= 80) {
-        message = "Excellent! You have strong Flutter knowledge.";
+        message = "Excellent! You have strong knowledge in this subject.";
     } else if (percentage >= 60) {
-        message = "Good job! You have a solid understanding of Flutter.";
+        message = "Good job! You have a solid understanding of the topics.";
     } else if (percentage >= 40) {
-        message = "Not bad! Keep studying Flutter to improve.";
+        message = "Not bad! Keep studying the topics to improve.";
     }
 
     if (resultMessageEl) {

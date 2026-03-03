@@ -2,7 +2,7 @@
 document.addEventListener('DOMContentLoaded', function () {
     // Apply theme if set
     applyThemeToCurrentPage();
-    
+
     // Initialize the application
     initApp();
 
@@ -11,10 +11,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Initialize timer display with default or saved time
     initializeTimerDisplay();
-    
-    // Load welcome content
+
+    // Load welcome content & apply to home screen
     loadAndApplyWelcomeContent();
-    
+
     // Setup event listeners (always call, not just on index.html)
     setupEventListeners();
 });
@@ -24,7 +24,7 @@ function applyThemeToCurrentPage() {
     if (savedTheme !== 'style-modern' && !document.querySelector(`link[href*="${savedTheme}.css"]`)) {
         const themeLink = document.createElement('link');
         themeLink.rel = 'stylesheet';
-        themeLink.href = `css/${savedTheme}.css?v=2.1`;
+        themeLink.href = `css/${savedTheme}.css?v=2.2`;
         themeLink.dataset.theme = 'true';
         document.head.appendChild(themeLink);
     }
@@ -32,9 +32,8 @@ function applyThemeToCurrentPage() {
 
 function initializeTimerDisplay() {
     const timerEl = document.getElementById('timer');
-    if (!timerEl) return; // Exit if timer element not found
+    if (!timerEl) return;
 
-    // Fetch interview time from database
     fetch('php/settings.php?action=get_interview_time')
         .then(res => res.json())
         .then(result => {
@@ -42,16 +41,13 @@ function initializeTimerDisplay() {
                 const minutes = parseInt(result.interview_time, 10);
                 timerEl.textContent = `${minutes.toString().padStart(2, '0')}:00`;
             } else {
-                // Default to 30 minutes if fetch fails or no time set
                 timerEl.textContent = '30:00';
             }
         })
-        .catch(err => {
-            console.error('Error loading interview time:', err);
-            timerEl.textContent = '30:00'; // Default fallback
-        });
-} function initApp() {
-    // Check exam status first
+        .catch(() => { timerEl.textContent = '30:00'; });
+}
+
+function initApp() {
     fetch('php/settings.php?action=get_interview_time')
         .then(res => res.json())
         .then(result => {
@@ -59,19 +55,15 @@ function initializeTimerDisplay() {
             const examClosedMessage = document.getElementById('examClosedMessage');
 
             if (result.success && result.exam_status) {
-                // Exam is running, show main content
                 if (mainContent) mainContent.style.display = 'block';
                 if (examClosedMessage) examClosedMessage.style.display = 'none';
                 initializeTimerDisplay();
             } else {
-                // Exam is not running, show closed message
                 if (mainContent) mainContent.style.display = 'none';
                 if (examClosedMessage) examClosedMessage.style.display = 'block';
             }
         })
-        .catch(err => {
-            console.error('Error fetching exam status:', err);
-            // Default to showing exam closed message on error
+        .catch(() => {
             const mainContent = document.getElementById('mainContent');
             const examClosedMessage = document.getElementById('examClosedMessage');
             if (mainContent) mainContent.style.display = 'none';
@@ -80,17 +72,14 @@ function initializeTimerDisplay() {
 }
 
 function setupEventListeners() {
-    // Navigation buttons (only on index.html)
     const studentRegisterBtn = document.getElementById('studentRegisterBtn');
     if (studentRegisterBtn) studentRegisterBtn.addEventListener('click', showStudentRegister);
     const backToWelcomeBtn = document.getElementById('backToWelcomeBtn');
     if (backToWelcomeBtn) backToWelcomeBtn.addEventListener('click', showWelcomeScreen);
 
-    // Student registration (only on index.html)
     const registerBtn = document.getElementById('registerBtn');
     if (registerBtn) registerBtn.addEventListener('click', registerStudent);
 
-    // Admin functions (for admin.html page)
     const loginBtn = document.getElementById('loginBtn');
     if (loginBtn) loginBtn.addEventListener('click', adminLogin);
     const logoutBtn = document.getElementById('logoutBtn');
@@ -108,7 +97,6 @@ function setupEventListeners() {
     const clearResultsBtn = document.getElementById('clearResultsBtn');
     if (clearResultsBtn) clearResultsBtn.addEventListener('click', clearResults);
 
-    // Quiz navigation (only on index.html)
     const prevBtn = document.getElementById('prevBtn');
     if (prevBtn) prevBtn.addEventListener('click', showPreviousQuestion);
     const nextBtn = document.getElementById('nextBtn');
@@ -118,12 +106,9 @@ function setupEventListeners() {
 // Screen management
 function showScreen(screenId) {
     const screens = document.querySelectorAll('.screen');
-    screens.forEach(screen => {
-        screen.classList.remove('active');
-    });
+    screens.forEach(screen => { screen.classList.remove('active'); });
     document.getElementById(screenId).classList.add('active');
 
-    // Show admin icon only on welcome screen
     const adminIcon = document.querySelector('.admin-icon-btn');
     if (adminIcon) {
         adminIcon.style.display = screenId === 'welcomeScreen' ? 'flex' : 'none';
@@ -136,7 +121,6 @@ function showWelcomeScreen() {
 
 function showStudentRegister() {
     showScreen('studentRegisterScreen');
-    // Clear any previous errors
     document.getElementById('registrationError').textContent = '';
 }
 
@@ -149,35 +133,46 @@ async function loadAndApplyWelcomeContent() {
 
         if (result.success && result.welcome_content) {
             const content = result.welcome_content;
-            
-            // Store and apply admin-chosen theme
+
+            // Apply admin-chosen theme
             if (result.admin_theme) {
                 localStorage.setItem('appTheme', result.admin_theme);
                 if (result.admin_theme !== 'style-modern') {
-                    // Remove existing theme link
                     document.querySelectorAll('link[data-theme]').forEach(l => l.remove());
                     const themeLink = document.createElement('link');
                     themeLink.rel = 'stylesheet';
-                    themeLink.href = `css/${result.admin_theme}.css?v=2.1`;
+                    themeLink.href = `css/${result.admin_theme}.css?v=2.2`;
                     themeLink.dataset.theme = 'true';
                     document.head.appendChild(themeLink);
                 }
             }
-            
-            // Update welcome screen title
-            const titleEl = document.querySelector('#welcomeScreen h2');
-            if (titleEl && content.title) {
-                titleEl.textContent = content.title;
-            }
 
-            // Update welcome screen description
-            const descEl = document.querySelector('#welcomeScreen > p:first-of-type');
-            if (descEl && content.description) {
-                descEl.textContent = content.description;
-            }
+            // Platform name → <h1>, <title>, exam-closed section
+            const platformName = content.platform_name || 'Interview Platform';
+            const headerTitleEl = document.getElementById('siteHeaderTitle');
+            if (headerTitleEl) headerTitleEl.textContent = platformName;
 
-            // Update instructions list
-            const instructionsList = document.querySelector('.instructions-list');
+            const pageTitleEl = document.getElementById('pageTitle');
+            if (pageTitleEl) pageTitleEl.textContent = platformName;
+            else document.title = platformName;
+
+            const examClosedText = document.getElementById('examClosedText');
+            if (examClosedText) examClosedText.textContent = `The ${platformName} is currently not available. Please check back later.`;
+
+            // Header subtitle
+            const headerSubEl = document.getElementById('siteHeaderSubtitle');
+            if (headerSubEl && content.header_subtitle) headerSubEl.textContent = content.header_subtitle;
+
+            // Welcome screen title
+            const titleEl = document.getElementById('welcomeTitle');
+            if (titleEl && content.title) titleEl.textContent = content.title;
+
+            // Welcome screen description
+            const descEl = document.getElementById('welcomeDescription');
+            if (descEl && content.description) descEl.textContent = content.description;
+
+            // Instructions list
+            const instructionsList = document.getElementById('instructionsList');
             if (instructionsList && content.instructions) {
                 instructionsList.innerHTML = '';
                 const instructions = content.instructions.split('\n').filter(i => i.trim());
@@ -190,6 +185,5 @@ async function loadAndApplyWelcomeContent() {
         }
     } catch (error) {
         console.error('Error loading welcome content:', error);
-        // Use defaults if fetch fails
     }
 }

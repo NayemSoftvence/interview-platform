@@ -2,20 +2,20 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <meta http-equiv="Pragma" content="no-cache" />
-    <meta http-equiv="Expires" content="0" />
-    <title>Flutter Mock Interview Platform</title>
-    <link rel="stylesheet" href="css/style-modern.css?v=2.1" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title id="pageTitle">Interview Platform</title>
+  <link rel="stylesheet" href="css/style-modern.css?v=2.2" />
 </head>
 
 <body>
   <div class="container">
     <div class="header">
-      <h1>Flutter Mock Interview Platform</h1>
-      <p>Test your Flutter development knowledge</p>
+      <h1 id="siteHeaderTitle">Interview Platform</h1>
+      <p id="siteHeaderSubtitle">Test your knowledge</p>
       <div class="header-right">
         <div class="timer" id="timer"></div>
         <a href="/admin" class="admin-icon-btn" title="Admin Portal">⚙️</a>
@@ -25,20 +25,17 @@
     <div class="content main-content" id="mainContent">
       <!-- Welcome Screen -->
       <div class="screen active" id="welcomeScreen">
-        <h2>Welcome to the Flutter Mock Interview</h2>
-        <p>
-          This quiz will test your knowledge of Flutter development. The
-          interview will automatically close if you switch tabs or click
+        <h2 id="welcomeTitle">Welcome to the Interview</h2>
+        <p id="welcomeDescription">
+          This quiz will test your knowledge. The interview will automatically close if you switch tabs or click
           outside the browser window.
         </p>
         <p><strong>Instructions:</strong></p>
-        <ul class="instructions-list">
-          <li>There are multiple-choice questions about Flutter</li>
+        <ul class="instructions-list" id="instructionsList">
+          <li>There are multiple-choice questions</li>
           <li>Select one answer for each question</li>
           <li>You cannot go back to previous questions</li>
-          <li>
-            The interview will close if you switch tabs or click outside
-          </li>
+          <li>The interview will close if you switch tabs or click outside</li>
           <li>Complete the interview within the time limit</li>
         </ul>
         <button class="btn" id="studentRegisterBtn">
@@ -48,7 +45,7 @@
 
       <!-- Student Registration Screen -->
       <div class="screen" id="studentRegisterScreen">
-        <h2>Student Registration</h2>
+        <h2>Candidate Registration</h2>
         <div class="student-form">
           <div class="form-group">
             <label for="studentName">Full Name *</label>
@@ -63,15 +60,12 @@
             <input type="tel" id="studentPhone" class="form-control" required />
           </div>
           <button class="btn" id="registerBtn">
-            Register & Start Interview
+            Register &amp; Start Interview
           </button>
           <button class="btn btn-outline" id="backToWelcomeBtn">Back</button>
           <div id="registrationError" class="error-message"></div>
         </div>
       </div>
-
-      <!-- Admin Login Screen -->
-      <!-- Admin Login Screen - REMOVED, see admin.html instead -->
 
       <!-- Quiz Screen -->
       <div class="screen" id="quizScreen">
@@ -113,7 +107,7 @@
     </div>
     <div class="exam-closed-message" id="examClosedMessage" style="display: none;">
       <h2>Interview Not Running</h2>
-      <p>The Flutter Mock Interview is currently not available. Please check back later.</p>
+      <p id="examClosedText">The Interview is currently not available. Please check back later.</p>
       <p>If you are an administrator, please log in to enable the interview.</p>
       <a href="/admin" class="btn">Admin Portal</a>
     </div>

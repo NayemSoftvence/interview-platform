@@ -105,13 +105,17 @@ function showAdminPanel() {
     if (sidebar) sidebar.classList.add('visible');
     const adminScreen = document.getElementById('adminScreen');
     if (adminScreen) adminScreen.style.display = 'flex';
-    
+
     showScreen('adminScreen');
     initializeAdminPanel();
     // Load dashboard stats immediately
     updateDashboardStats();
     renderQuestionsList();
     renderResultsTable();
+    // Load question set selectors
+    if (typeof loadSetSelectorsForQuestions === 'function') {
+        loadSetSelectorsForQuestions();
+    }
 }
 
 function logout() {
@@ -140,7 +144,7 @@ function logout() {
         if (sidebar) sidebar.classList.remove('visible');
         const adminScreen = document.getElementById('adminScreen');
         if (adminScreen) adminScreen.style.display = 'none';
-        
+
         // Show login screen
         if (typeof showScreen === 'function') {
             showScreen('adminLoginScreen');

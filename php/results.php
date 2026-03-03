@@ -8,7 +8,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
     // 'save' is allowed for students; admin-only actions require session
-    if (in_array($action, ['get_all', 'clear_all'])) {
+    if (in_array($action, ['get_all', 'get_detail', 'clear_all'])) {
         if (empty($_SESSION['is_admin']) || $_SESSION['is_admin'] !== true) {
             http_response_code(401);
             echo json_encode(['success' => false, 'message' => 'Unauthorized']);
@@ -109,7 +109,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $conn = getDBConnection();
         $sql = "
-            SELECT s.name, s.email, s.phone, r.score, r.total_questions, r.percentage, r.completion_date 
+            SELECT s.id as student_id, s.name, s.email, s.phone, 
+                   r.id as result_id, r.score, r.total_questions, r.percentage, 
+                   r.answers, r.completion_date 
             FROM results r 
             JOIN students s ON r.student_id = s.id 
             ORDER BY $sort_field $sort_direction
@@ -123,6 +125,113 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         echo json_encode($results);
+        $conn->close();
+
+    } elseif ($action === 'get_detail') {
+        $student_id = (int)($_POST['student_id'] ?? 0);
+
+        if (!$student_id) {
+            echo json_encode(['success' => false, 'message' => 'Student ID required']);
+            exit;
+        }
+
+        $conn = getDBConnection();
+
+        // Get student info + result
+        $stmt = $conn->prepare("
+            SELECT s.name, s.email, s.phone,
+                   r.score, r.total_questions, r.percentage, r.answers, r.completion_date
+            FROM results r
+            JOIN students s ON r.student_id = s.id
+            WHERE r.student_id = ?
+            LIMIT 1
+        ");
+        $stmt->bind_param("i", $student_id);
+        $result = $stmt->get_result();
+
+        if ($result->num_rows === 0) {
+            echo json_encode(['success' => false, 'message' => 'Result not found']);
+            $stmt->close();
+            $conn->close();
+            exit;
+        }
+
+        $row = $result->fetch_assoc();
+        $stmt->close();
+
+        // Parse stored answers (array of selected option indices, 0-based, or -1 for skipped)
+        $userAnswers = json_decode($row['answers'], true);
+        if (!is_array($userAnswers)) {
+            $userAnswers = [];
+        }
+
+        // Get all questions (unshuffled from DB so we can match by question order)
+        // We store question_ids in the answers implicitly via index, so fetch all questions in DB insertion order
+        $engine = $_ENV['DB_ENGINE'] ?? 'mysql';
+        
+        // Get active set
+        $settingsResult = $conn->query("SELECT active_question_set_id FROM settings WHERE id = 1");
+        $activeSetId = 1;
+        if ($settingsResult && $settingsResult->num_rows > 0) {
+            $settingsRow = $settingsResult->fetch_assoc();
+            $activeSetId = (int)($settingsRow['active_question_set_id'] ?? 1);
+        }
+
+        // Check if set_id column exists
+        $hasSetId = false;
+        $colCheck = $conn->query("SELECT set_id FROM questions LIMIT 1");
+        if ($colCheck !== false) {
+            $hasSetId = true;
+        }
+
+        if ($hasSetId) {
+            $qResult = $conn->query("SELECT id, question, option1, option2, option3, option4, correct_answer FROM questions WHERE set_id = $activeSetId ORDER BY id ASC");
+        } else {
+            $qResult = $conn->query("SELECT id, question, option1, option2, option3, option4, correct_answer FROM questions ORDER BY id ASC");
+        }
+
+        $questions = [];
+        while ($q = $qResult->fetch_assoc()) {
+            $questions[] = $q;
+        }
+
+        // Build detail breakdown
+        // Note: answers are stored as array indexed by the question position AT THE TIME of the quiz.
+        // Since questions are shuffled per candidate, we store answers indexed 0..N-1 matching
+        // the shuffled order. We can't recover the exact shuffle, but we can show what we know.
+        // For the detail view, we'll pair userAnswers[i] with questions[i] in DB insertion order.
+        $details = [];
+        foreach ($questions as $i => $q) {
+            $userAnswerIdx = isset($userAnswers[$i]) ? (int)$userAnswers[$i] : -1;
+            $correctAnswerIdx = (int)$q['correct_answer'] - 1; // stored 1-based in DB
+
+            $options = [$q['option1'], $q['option2'], $q['option3'], $q['option4']];
+
+            $details[] = [
+                'question_num' => $i + 1,
+                'question'     => $q['question'],
+                'options'      => $options,
+                'correct_answer_index' => $correctAnswerIdx,
+                'user_answer_index'    => $userAnswerIdx,
+                'is_correct'   => ($userAnswerIdx >= 0 && $userAnswerIdx === $correctAnswerIdx),
+                'skipped'      => ($userAnswerIdx < 0),
+            ];
+        }
+
+        echo json_encode([
+            'success'    => true,
+            'student'    => [
+                'name'  => $row['name'],
+                'email' => $row['email'],
+                'phone' => $row['phone'],
+            ],
+            'score'      => (int)$row['score'],
+            'total'      => (int)$row['total_questions'],
+            'percentage' => (float)$row['percentage'],
+            'completion_date' => $row['completion_date'],
+            'details'    => $details,
+        ]);
+
         $conn->close();
 
     } elseif ($action === 'clear_all') {

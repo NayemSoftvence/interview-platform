@@ -13,40 +13,31 @@ ob_clean();
 
 header('Content-Type: application/json');
 
+function ensureSettingsColumns($conn)
+{
+    @$conn->query("ALTER TABLE settings ADD COLUMN welcome_title VARCHAR(255) DEFAULT NULL");
+    @$conn->query("ALTER TABLE settings ADD COLUMN welcome_description TEXT DEFAULT NULL");
+    @$conn->query("ALTER TABLE settings ADD COLUMN welcome_instructions TEXT DEFAULT NULL");
+    @$conn->query("ALTER TABLE settings ADD COLUMN admin_theme VARCHAR(100) DEFAULT 'style-modern'");
+    @$conn->query("ALTER TABLE settings ADD COLUMN platform_name VARCHAR(255) DEFAULT NULL");
+    @$conn->query("ALTER TABLE settings ADD COLUMN header_subtitle VARCHAR(255) DEFAULT NULL");
+    @$conn->query("ALTER TABLE settings ADD COLUMN active_question_set_id INTEGER DEFAULT 1");
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    // Get current interview time setting
     $action = $_GET['action'] ?? 'get_interview_time';
 
     if ($action === 'get_interview_time') {
         $conn = getDBConnection();
+        ensureSettingsColumns($conn);
 
-        // Create settings table if it doesn't exist
-        $sql = "CREATE TABLE IF NOT EXISTS settings (
-            id INT(1) PRIMARY KEY DEFAULT 1,
-            interview_time_minutes INT(3) NOT NULL DEFAULT 30,
-            exam_status BOOLEAN NOT NULL DEFAULT TRUE,
-            welcome_title VARCHAR(255),
-            welcome_description TEXT,
-            welcome_instructions TEXT,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        )";
-
-        $conn->query($sql);
-        
-        // Ensure columns exist (for existing tables) - silently ignore errors if columns already exist
-        @$conn->query("ALTER TABLE settings ADD COLUMN welcome_title VARCHAR(255) DEFAULT NULL");
-        @$conn->query("ALTER TABLE settings ADD COLUMN welcome_description TEXT DEFAULT NULL");
-        @$conn->query("ALTER TABLE settings ADD COLUMN welcome_instructions TEXT DEFAULT NULL");
-
-        // Get the setting
         $result = $conn->query("SELECT interview_time_minutes, exam_status FROM settings WHERE id = 1");
 
         if ($result && $result->num_rows > 0) {
             $row = $result->fetch_assoc();
             echo json_encode(['success' => true, 'interview_time' => (int) $row['interview_time_minutes'], 'exam_status' => (bool) $row['exam_status']]);
         } else {
-            // Initialize with default value
-            $conn->query("INSERT INTO settings (id, interview_time_minutes, exam_status) VALUES (1, 30, TRUE) ON DUPLICATE KEY UPDATE interview_time_minutes=30, exam_status=TRUE");
+            $conn->query("INSERT OR REPLACE INTO settings (id, interview_time_minutes, exam_status) VALUES (1, 30, 1)");
             echo json_encode(['success' => true, 'interview_time' => 30, 'exam_status' => true]);
         }
 
@@ -56,12 +47,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
     if ($action === 'get_welcome_content') {
         $conn = getDBConnection();
+        ensureSettingsColumns($conn);
 
-        // Ensure theme column exists
-        @$conn->query("ALTER TABLE settings ADD COLUMN admin_theme VARCHAR(100) DEFAULT 'style-modern'");
-
-        // Get the setting including theme
-        $result = $conn->query("SELECT welcome_title, welcome_description, welcome_instructions, admin_theme FROM settings WHERE id = 1");
+        $result = $conn->query("SELECT welcome_title, welcome_description, welcome_instructions, admin_theme, platform_name, header_subtitle FROM settings WHERE id = 1");
 
         if ($result && $result->num_rows > 0) {
             $row = $result->fetch_assoc();
@@ -70,7 +58,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 'welcome_content' => [
                     'title' => $row['welcome_title'] ?: '',
                     'description' => $row['welcome_description'] ?: '',
-                    'instructions' => $row['welcome_instructions'] ?: ''
+                    'instructions' => $row['welcome_instructions'] ?: '',
+                    'platform_name' => $row['platform_name'] ?: '',
+                    'header_subtitle' => $row['header_subtitle'] ?: '',
                 ],
                 'admin_theme' => $row['admin_theme'] ?: 'style-modern'
             ]);
@@ -84,7 +74,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Check if user is admin
     if (!isset($_SESSION['is_admin']) || $_SESSION['is_admin'] !== true) {
         echo json_encode(['success' => false, 'message' => 'Unauthorized']);
         exit;
@@ -96,30 +85,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $time = (int) ($_POST['time'] ?? 0);
         $exam_status = filter_var($_POST['exam_status'] ?? true, FILTER_VALIDATE_BOOLEAN);
 
-        // Validate time
         if ($time < 5 || $time > 120) {
             echo json_encode(['success' => false, 'message' => 'Interview time must be between 5 and 120 minutes']);
             exit;
         }
 
         $conn = getDBConnection();
+        ensureSettingsColumns($conn);
 
-        // Update or insert the setting using SQLite-compatible syntax
-        // INSERT OR REPLACE works in both SQLite and MySQL
         $sql = "INSERT OR REPLACE INTO settings (id, interview_time_minutes, exam_status) VALUES (1, ?, ?)";
-
         $stmt = $conn->prepare($sql);
-        
         if (!$stmt) {
             echo json_encode(['success' => false, 'message' => 'Database error: ' . $conn->error]);
             $conn->close();
             exit;
         }
-        
         $stmt->bind_param('ii', $time, $exam_status);
 
         if ($stmt->execute()) {
-            echo json_encode(['success' => true, 'message' => 'Interview settings updated', 'interview_time' => $time, 'exam_status' => (bool)$exam_status]);
+            echo json_encode(['success' => true, 'message' => 'Interview settings updated', 'interview_time' => $time, 'exam_status' => (bool) $exam_status]);
         } else {
             echo json_encode(['success' => false, 'message' => 'Failed to update interview time']);
         }
@@ -133,26 +117,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $title = $_POST['title'] ?? '';
         $description = $_POST['description'] ?? '';
         $instructions = $_POST['instructions'] ?? '';
+        $platform_name = $_POST['platform_name'] ?? '';
+        $header_subtitle = $_POST['header_subtitle'] ?? '';
 
         $conn = getDBConnection();
-        
-        // Ensure columns exist - silently ignore errors if columns already exist
-        @$conn->query("ALTER TABLE settings ADD COLUMN welcome_title VARCHAR(255) DEFAULT NULL");
-        @$conn->query("ALTER TABLE settings ADD COLUMN welcome_description TEXT DEFAULT NULL");
-        @$conn->query("ALTER TABLE settings ADD COLUMN welcome_instructions TEXT DEFAULT NULL");
+        ensureSettingsColumns($conn);
 
-        // Update welcome content
-        $sql = "UPDATE settings SET welcome_title = ?, welcome_description = ?, welcome_instructions = ? WHERE id = 1";
-        
+        $sql = "UPDATE settings SET welcome_title = ?, welcome_description = ?, welcome_instructions = ?, platform_name = ?, header_subtitle = ? WHERE id = 1";
         $stmt = $conn->prepare($sql);
-        
         if (!$stmt) {
             echo json_encode(['success' => false, 'message' => 'Database error: ' . $conn->error]);
             $conn->close();
             exit;
         }
-        
-        $stmt->bind_param('sss', $title, $description, $instructions);
+        $stmt->bind_param('sssss', $title, $description, $instructions, $platform_name, $header_subtitle);
 
         if ($stmt->execute()) {
             echo json_encode(['success' => true, 'message' => 'Welcome content saved']);
@@ -167,8 +145,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'save_admin_theme') {
         $theme = $_POST['theme'] ?? 'style-modern';
-
-        // Validate theme name (prevent injection)
         $allowed_themes = ['style-modern', 'theme-professional-blue', 'theme-modern-violet', 'theme-teal-coral', 'theme-dark-mode'];
         if (!in_array($theme, $allowed_themes)) {
             echo json_encode(['success' => false, 'message' => 'Invalid theme']);
@@ -176,21 +152,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $conn = getDBConnection();
-        
-        // Ensure column exists
-        @$conn->query("ALTER TABLE settings ADD COLUMN admin_theme VARCHAR(100) DEFAULT 'style-modern'");
+        ensureSettingsColumns($conn);
 
-        // Update theme
         $sql = "UPDATE settings SET admin_theme = ? WHERE id = 1";
-        
         $stmt = $conn->prepare($sql);
-        
         if (!$stmt) {
             echo json_encode(['success' => false, 'message' => 'Database error: ' . $conn->error]);
             $conn->close();
             exit;
         }
-        
         $stmt->bind_param('s', $theme);
 
         if ($stmt->execute()) {

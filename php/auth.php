@@ -16,19 +16,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        // Check if email or phone already exists
         $conn = getDBConnection();
+
+        // Check if email or phone already exists → update name and reuse existing record
         $stmt = $conn->prepare("SELECT id FROM students WHERE email = ? OR phone = ?");
         $stmt->bind_param("ss", $email, $phone);
         $stmt->execute();
         $result = $stmt->get_result();
 
         if ($result->num_rows > 0) {
-            echo json_encode(['success' => false, 'message' => 'Email or phone already registered']);
+            $row = $result->fetch_assoc();
+            $student_id = $row['id'];
             $stmt->close();
+
+            // Update name in case it changed
+            $upd = $conn->prepare("UPDATE students SET name = ? WHERE id = ?");
+            $upd->bind_param("si", $name, $student_id);
+            $upd->execute();
+            $upd->close();
+
+            echo json_encode(['success' => true, 'student_id' => $student_id]);
             $conn->close();
             exit;
         }
+        $stmt->close();
 
         // Insert new student
         $stmt = $conn->prepare("INSERT INTO students (name, email, phone) VALUES (?, ?, ?)");
@@ -38,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $student_id = $conn->insert_id;
             echo json_encode(['success' => true, 'student_id' => $student_id]);
         } else {
-            echo json_encode(['success' => false, 'message' => 'Registration failed']);
+            echo json_encode(['success' => false, 'message' => 'Registration failed. Please try again.']);
         }
 
         $stmt->close();

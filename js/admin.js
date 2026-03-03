@@ -8,7 +8,6 @@ function initThemeSelector() {
     const themeSelector = document.getElementById('themeSelector');
     if (!themeSelector) return;
 
-    // Load saved theme from database first, fall back to localStorage
     fetch('php/settings.php?action=get_welcome_content', { credentials: 'same-origin' })
         .then(res => res.json())
         .then(result => {
@@ -24,70 +23,57 @@ function initThemeSelector() {
             applyTheme(savedTheme);
         });
 
-    // Add change event listener
     themeSelector.addEventListener('change', function (e) {
         const selectedTheme = e.target.value;
         localStorage.setItem('adminTheme', selectedTheme);
         applyTheme(selectedTheme);
-        
-        // Save theme to database
+
         fetch('php/settings.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             credentials: 'same-origin',
             body: `action=save_admin_theme&theme=${encodeURIComponent(selectedTheme)}`
         })
-        .then(res => res.json())
-        .then(result => {
-            if (result.success) {
-                // Broadcast theme change to other tabs
-                localStorage.setItem('adminThemeUpdated', String(Date.now()));
-                showAdminMessage('Theme saved and will apply to all devices', 'success');
-            }
-        })
-        .catch(err => console.error('Error saving theme:', err));
+            .then(res => res.json())
+            .then(result => {
+                if (result.success) {
+                    localStorage.setItem('adminThemeUpdated', String(Date.now()));
+                    showAdminMessage('Theme saved and will apply to all devices', 'success');
+                }
+            })
+            .catch(err => console.error('Error saving theme:', err));
     });
 }
 
 function applyTheme(themeName) {
-    // Remove all existing theme links
     const existingThemeLinks = document.querySelectorAll('link[data-theme]');
     existingThemeLinks.forEach(link => link.remove());
 
-    // If not the default theme, add the theme CSS file
     if (themeName !== 'style-modern') {
         const themeLink = document.createElement('link');
         themeLink.rel = 'stylesheet';
-        themeLink.href = `css/${themeName}.css?v=2.1`;
+        themeLink.href = `css/${themeName}.css?v=2.2`;
         themeLink.dataset.theme = 'true';
         document.head.appendChild(themeLink);
     }
-    
-    // Store theme preference globally for other pages
+
     localStorage.setItem('appTheme', themeName);
     localStorage.setItem('adminTheme', themeName);
-
-    // Add cache busting parameter
-    console.log('Theme applied:', themeName);
 }
 
 // ===== ADMIN DASHBOARD NAVIGATION =====
 
 function switchAdminScreen(screenId) {
-    // Hide all admin screens
     document.querySelectorAll('.admin-screen').forEach(screen => {
         screen.classList.remove('active');
     });
 
-    // Show selected screen
     const selectedScreen = document.getElementById(screenId);
     if (selectedScreen) {
         selectedScreen.classList.add('active');
-        // Scroll to top of the screen
         selectedScreen.scrollTop = 0;
     }
 
-    // Update navigation active state
     document.querySelectorAll('.nav-item').forEach(item => {
         item.classList.remove('active');
         if (item.getAttribute('data-screen') === screenId) {
@@ -95,32 +81,41 @@ function switchAdminScreen(screenId) {
         }
     });
 
-    // Initialize screen content if needed
     if (screenId === 'dashboardHome') {
         updateDashboardStats();
     } else if (screenId === 'resultsScreen') {
         renderResultsTable();
-        // Auto-refresh results every 3 seconds
-        if (window.resultsRefreshInterval) {
-            clearInterval(window.resultsRefreshInterval);
-        }
+        if (window.resultsRefreshInterval) clearInterval(window.resultsRefreshInterval);
         window.resultsRefreshInterval = setInterval(renderResultsTable, 3000);
     } else if (screenId === 'questionsScreen') {
-        // Ensure tabs are initialized/scoped, then render list
         initQuestionTabs();
+        loadSetSelectorsForQuestions();
         renderQuestionsList();
     } else if (screenId === 'settingsScreen') {
         loadSettings();
+    } else if (screenId === 'questionSetsScreen') {
+        renderQuestionSetsList();
     }
 }
 
-function updateDashboardStats() {
-    // Update total questions count
-    loadQuestionsFromDB().then(questions => {
-        document.getElementById('totalQuestionsCount').textContent = questions.length;
-    });
+async function updateDashboardStats() {
+    // Active set name
+    try {
+        const resp = await fetch('php/question_sets.php', { credentials: 'same-origin' });
+        const data = await resp.json();
+        if (data.success) {
+            const active = data.sets.find(s => s.is_active);
+            const activeSetEl = document.getElementById('activeSetDisplay');
+            if (activeSetEl) activeSetEl.textContent = active ? active.name : '--';
 
-    // Update interview duration and exam status
+            // Total questions in active set
+            const totalQEl = document.getElementById('totalQuestionsCount');
+            if (totalQEl && active) totalQEl.textContent = active.question_count;
+        }
+    } catch (e) {
+        console.error('Error loading sets for dashboard:', e);
+    }
+
     fetch('php/settings.php?action=get_interview_time', { credentials: 'same-origin' })
         .then(res => res.json())
         .then(result => {
@@ -133,9 +128,8 @@ function updateDashboardStats() {
                 }
             }
         })
-        .catch(err => console.error('Error fetching interview duration or exam status:', err));
+        .catch(err => console.error('Error fetching settings:', err));
 
-    // Update total results count
     fetch('php/results.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -151,27 +145,21 @@ function updateDashboardStats() {
 
 // Setup navigation event listeners
 document.addEventListener('DOMContentLoaded', function () {
-    // Initialize theme selector
     initThemeSelector();
 
-    // Navigation click handlers
     document.querySelectorAll('.nav-item').forEach(item => {
         item.addEventListener('click', function (e) {
             e.preventDefault();
             const screenId = this.getAttribute('data-screen');
-            if (screenId) {
-                switchAdminScreen(screenId);
-            }
+            if (screenId) switchAdminScreen(screenId);
         });
     });
 
-    // Initialize tabs for the questions section (scoped and idempotent)
     initQuestionTabs();
-    // Attach clear button in Settings (moved here)
+
     const clearSettingsBtn = document.getElementById('clearQuestionsBtnSettings');
     if (clearSettingsBtn) clearSettingsBtn.addEventListener('click', function (e) { e.preventDefault(); clearQuestions(); });
 
-    // Exam status toggle event listener
     const examStatusToggle = document.getElementById('examStatusToggle');
     if (examStatusToggle) {
         examStatusToggle.addEventListener('change', function () {
@@ -179,27 +167,43 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Welcome content save button
     const saveWelcomeContentBtn = document.getElementById('saveWelcomeContentBtn');
-    if (saveWelcomeContentBtn) {
-        saveWelcomeContentBtn.addEventListener('click', saveWelcomeContent);
+    if (saveWelcomeContentBtn) saveWelcomeContentBtn.addEventListener('click', saveWelcomeContent);
+
+    const createSetBtn = document.getElementById('createSetBtn');
+    if (createSetBtn) createSetBtn.addEventListener('click', createQuestionSet);
+
+    const questionSetFilter = document.getElementById('questionSetFilter');
+    if (questionSetFilter) {
+        questionSetFilter.addEventListener('change', function () {
+            renderQuestionsList();
+        });
     }
 
-    // Listen for results updates from other tabs (students saving results)
+    const selectAllCheck = document.getElementById('selectAllQuestions');
+    if (selectAllCheck) {
+        selectAllCheck.addEventListener('change', function () {
+            const checks = document.querySelectorAll('.question-checkbox');
+            checks.forEach(c => c.checked = this.checked);
+            updateBulkActionsUI();
+        });
+    }
+
+    const bulkDelBtn = document.getElementById('bulkDeleteBtn');
+    if (bulkDelBtn) {
+        bulkDelBtn.addEventListener('click', bulkDeleteQuestions);
+    }
+
     window.addEventListener('storage', function (e) {
         if (!e.key) return;
         if (e.key === 'results_updated') {
-            // Refresh dashboard counts and results table if visible
             updateDashboardStats();
-            // If currently on results screen, refresh table
             const resultsScreen = document.getElementById('resultsScreen');
             if (resultsScreen && resultsScreen.classList.contains('active')) {
                 renderResultsTable();
             }
         }
-        // Listen for theme updates from other tabs
         if (e.key === 'adminThemeUpdated') {
-            // Reload theme from DB
             fetch('php/settings.php?action=get_welcome_content', { credentials: 'same-origin' })
                 .then(res => res.json())
                 .then(result => {
@@ -213,35 +217,25 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 
-// Initialize tab behavior specifically for the questions section.
-// This scopes event handlers to the .questions-section and is safe to call
-// multiple times (idempotent).
 function initQuestionTabs() {
     const section = document.querySelector('.questions-section');
     if (!section) return;
-
-    // Avoid attaching the handler multiple times
     if (section.__tabsInitialized) return;
     section.__tabsInitialized = true;
 
-    // Use event delegation for simplicity: a single click handler on the section
     section.addEventListener('click', function (e) {
         const btn = e.target.closest('.tab-btn');
         if (!btn || !section.contains(btn)) return;
         e.preventDefault();
 
         const tabId = btn.getAttribute('data-tab');
-
-        // Toggle active classes only within this section
         section.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         section.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-
         btn.classList.add('active');
         const tabContent = section.querySelector('#' + tabId);
         if (tabContent) tabContent.classList.add('active');
     });
 
-    // Ensure sensible defaults: if nothing active, default to Add Question
     if (!section.querySelector('.tab-btn.active')) {
         const defaultTab = section.querySelector('.tab-btn[data-tab="addQuestion"]');
         if (defaultTab) defaultTab.classList.add('active');
@@ -252,17 +246,269 @@ function initQuestionTabs() {
     }
 }
 
-// ===== END ADMIN DASHBOARD NAVIGATION =====
-
-function showAdminMessage(message, type = 'success') {
-    const el = document.getElementById('adminMessage');
+function showAdminMessage(message, type = 'success', elementId = null) {
+    const el = elementId ? document.getElementById(elementId) : document.getElementById('adminMessage');
     if (!el) return;
     el.textContent = message;
     el.classList.remove('success', 'error');
     el.classList.add(type === 'error' ? 'error' : 'success');
-    // Auto-hide after a few seconds
-    setTimeout(() => { el.classList.remove('success', 'error'); el.textContent = ''; }, 4000);
+    setTimeout(() => { el.textContent = ''; el.classList.remove('success', 'error'); }, 5000);
 }
+
+// ===== QUESTION SETS =====
+
+async function loadQuestionSets() {
+    try {
+        const resp = await fetch('php/question_sets.php', { credentials: 'same-origin' });
+        const data = await resp.json();
+        return data.success ? { sets: data.sets, activeSetId: data.active_set_id } : { sets: [], activeSetId: 1 };
+    } catch (e) {
+        return { sets: [], activeSetId: 1 };
+    }
+}
+
+async function loadSetSelectorsForQuestions() {
+    const { sets, activeSetId } = await loadQuestionSets();
+
+    const selectors = ['questionSetSelect', 'bulkSetSelect', 'questionSetFilter'];
+    selectors.forEach(selId => {
+        const sel = document.getElementById(selId);
+        if (!sel) return;
+        const isFilter = selId === 'questionSetFilter';
+        sel.innerHTML = '';
+        if (isFilter) {
+            const allOpt = document.createElement('option');
+            allOpt.value = '0';
+            allOpt.textContent = 'All Sets';
+            sel.appendChild(allOpt);
+        }
+        sets.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.id;
+            opt.textContent = s.name + (s.is_active ? ' ✓ (active)' : '');
+            if (s.id == activeSetId && !isFilter) opt.selected = true;
+            sel.appendChild(opt);
+        });
+    });
+}
+
+async function renderQuestionSetsList() {
+    const container = document.getElementById('questionSetsList');
+    if (!container) return;
+    container.innerHTML = '<p>Loading...</p>';
+
+    const { sets, activeSetId } = await loadQuestionSets();
+
+    if (sets.length === 0) {
+        container.innerHTML = '<p>No question sets found.</p>';
+        return;
+    }
+
+    container.innerHTML = '';
+    sets.forEach(s => {
+        const div = document.createElement('div');
+        div.className = 'question-item';
+        div.style.cssText = 'display:flex; align-items:center; gap:12px; flex-wrap:wrap;';
+
+        const info = document.createElement('div');
+        info.style.flex = '1';
+        info.innerHTML = `
+            <strong>${escapeHtml(s.name)}</strong>
+            ${s.is_active ? ' <span style="background:#22c55e;color:#fff;padding:2px 8px;border-radius:12px;font-size:0.75rem;">Active</span>' : ''}
+            <br>
+            <small style="color:#666;">${escapeHtml(s.description || 'No description')} &mdash; ${s.question_count} question${s.question_count !== 1 ? 's' : ''}</small>
+        `;
+
+        const actions = document.createElement('div');
+        actions.className = 'question-actions';
+        actions.style.display = 'flex';
+        actions.style.gap = '8px';
+        actions.style.flexWrap = 'wrap';
+
+        if (!s.is_active) {
+            const activateBtn = createActionBtn('✓ Activate', 'btn', () => activateQuestionSet(s.id));
+            actions.appendChild(activateBtn);
+        }
+
+        const renameBtn = createActionBtn('Rename', 'btn', () => promptRenameSet(s));
+        actions.appendChild(renameBtn);
+
+        if (sets.length > 1) {
+            const deleteBtn = createActionBtn('Delete', 'btn btn-danger', () => deleteQuestionSet(s.id, s.name));
+            actions.appendChild(deleteBtn);
+        }
+
+        div.appendChild(info);
+        div.appendChild(actions);
+        container.appendChild(div);
+    });
+}
+
+function createActionBtn(text, className, onClick) {
+    const btn = document.createElement('button');
+    btn.className = className;
+    btn.textContent = text;
+    btn.style.padding = '4px 12px';
+    btn.style.fontSize = '0.85rem';
+    btn.addEventListener('click', onClick);
+    return btn;
+}
+
+async function createQuestionSet() {
+    const name = document.getElementById('newSetName').value.trim();
+    const description = document.getElementById('newSetDescription').value.trim();
+    if (!name) {
+        showAdminMessage('Please enter a set name', 'error');
+        return;
+    }
+    try {
+        const resp = await fetch('php/question_sets.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ action: 'create', name, description })
+        });
+        const result = await resp.json();
+        if (result.success) {
+            showAdminMessage('Question set created!', 'success');
+            document.getElementById('newSetName').value = '';
+            document.getElementById('newSetDescription').value = '';
+            await renderQuestionSetsList();
+            await loadSetSelectorsForQuestions();
+        } else {
+            showAdminMessage('Error: ' + (result.message || 'Failed to create set'), 'error');
+        }
+    } catch (e) {
+        showAdminMessage('Network error: ' + e.message, 'error');
+    }
+}
+
+async function activateQuestionSet(id) {
+    try {
+        const resp = await fetch('php/question_sets.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ action: 'set_active', id })
+        });
+        const result = await resp.json();
+        if (result.success) {
+            showAdminMessage('Active question set updated!', 'success');
+            await renderQuestionSetsList();
+            await loadSetSelectorsForQuestions();
+            updateDashboardStats();
+        } else {
+            showAdminMessage('Error: ' + (result.message || ''), 'error');
+        }
+    } catch (e) {
+        showAdminMessage('Network error: ' + e.message, 'error');
+    }
+}
+
+async function promptRenameSet(set) {
+    const newName = prompt('Enter new name for set:', set.name);
+    if (!newName || !newName.trim() || newName.trim() === set.name) return;
+    const newDesc = prompt('Enter description (optional):', set.description || '');
+    try {
+        const resp = await fetch('php/question_sets.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ action: 'rename', id: set.id, name: newName.trim(), description: (newDesc || '').trim() })
+        });
+        const result = await resp.json();
+        if (result.success) {
+            showAdminMessage('Set renamed!', 'success');
+            await renderQuestionSetsList();
+            await loadSetSelectorsForQuestions();
+        } else {
+            showAdminMessage('Error: ' + (result.message || ''), 'error');
+        }
+    } catch (e) {
+        showAdminMessage('Network error: ' + e.message, 'error');
+    }
+}
+
+// ===== CUSTOM CONFIRM DIALOG =====
+// Avoids browser native confirm() which can be blocked or flash-close in some environments
+
+function showCustomConfirm(message, onConfirm, onCancel) {
+    // Remove any existing confirm overlay
+    const existing = document.getElementById('customConfirmOverlay');
+    if (existing) existing.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'customConfirmOverlay';
+    overlay.style.cssText = [
+        'position:fixed', 'top:0', 'left:0', 'width:100%', 'height:100%',
+        'background:rgba(0,0,0,0.55)', 'z-index:99999',
+        'display:flex', 'align-items:center', 'justify-content:center',
+        'animation:fadeIn 0.15s ease'
+    ].join(';');
+
+    const box = document.createElement('div');
+    box.style.cssText = [
+        'background:#fff', 'border-radius:12px', 'padding:28px 32px',
+        'max-width:420px', 'width:90%', 'box-shadow:0 20px 60px rgba(0,0,0,0.3)',
+        'text-align:center'
+    ].join(';');
+
+    box.innerHTML = `
+        <div style="font-size:2rem;margin-bottom:12px;">⚠️</div>
+        <p style="font-size:1rem;color:#1e293b;line-height:1.5;margin-bottom:24px;">${escapeHtml(message)}</p>
+        <div style="display:flex;gap:12px;justify-content:center;">
+            <button id="customConfirmCancel" style="flex:1;padding:10px 20px;border-radius:8px;border:2px solid #e2e8f0;background:#f8fafc;color:#1e293b;font-size:0.95rem;cursor:pointer;">Cancel</button>
+            <button id="customConfirmOk" style="flex:1;padding:10px 20px;border-radius:8px;border:none;background:#ef4444;color:#fff;font-size:0.95rem;font-weight:600;cursor:pointer;">Yes, Delete</button>
+        </div>
+    `;
+
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    const cleanup = () => { if (overlay.parentNode) overlay.remove(); };
+
+    overlay.querySelector('#customConfirmOk').addEventListener('click', () => {
+        cleanup();
+        if (onConfirm) onConfirm();
+    });
+    overlay.querySelector('#customConfirmCancel').addEventListener('click', () => {
+        cleanup();
+        if (onCancel) onCancel();
+    });
+    // Close on backdrop click
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) { cleanup(); if (onCancel) onCancel(); }
+    });
+}
+
+async function deleteQuestionSet(id, name) {
+    showCustomConfirm(
+        `Are you sure you want to delete the set "${name}" and ALL its questions? This cannot be undone.`,
+        async () => {
+            try {
+                const resp = await fetch('php/question_sets.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ action: 'delete', id })
+                });
+                const result = await resp.json();
+                if (result.success) {
+                    showAdminMessage('Question set deleted!', 'success');
+                    await renderQuestionSetsList();
+                    await loadSetSelectorsForQuestions();
+                    updateDashboardStats();
+                } else {
+                    showAdminMessage('Error: ' + (result.message || 'Failed to delete'), 'error');
+                }
+            } catch (e) {
+                showAdminMessage('Network error: ' + e.message, 'error');
+            }
+        }
+    );
+}
+
+// ===== QUESTIONS =====
 
 async function addQuestion() {
     const questionText = document.getElementById('questionText').value.trim();
@@ -271,13 +517,13 @@ async function addQuestion() {
     const option3 = document.getElementById('option3').value.trim();
     const option4 = document.getElementById('option4').value.trim();
     const correctAnswer = parseInt(document.getElementById('correctAnswer').value);
+    const set_id = parseInt(document.getElementById('questionSetSelect')?.value || 0);
 
     if (!questionText || !option1 || !option2 || !option3 || !option4) {
         showAdminMessage('Please fill in all fields', 'error');
         return;
     }
 
-    // If editing an existing question, delegate to update flow
     const editingId = document.getElementById('editingQuestionId').value;
     if (editingId) {
         return updateQuestion(parseInt(editingId, 10));
@@ -288,22 +534,19 @@ async function addQuestion() {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             credentials: 'same-origin',
-            body: `action=add&question=${encodeURIComponent(questionText)}&option1=${encodeURIComponent(option1)}&option2=${encodeURIComponent(option2)}&option3=${encodeURIComponent(option3)}&option4=${encodeURIComponent(option4)}&correct_answer=${correctAnswer}`
+            body: `action=add&question=${encodeURIComponent(questionText)}&option1=${encodeURIComponent(option1)}&option2=${encodeURIComponent(option2)}&option3=${encodeURIComponent(option3)}&option4=${encodeURIComponent(option4)}&correct_answer=${correctAnswer}&set_id=${set_id}`
         });
 
         const result = await response.json();
 
         if (result.success) {
             showAdminMessage('Question added successfully!', 'success');
-            // Clear form
             document.getElementById('questionText').value = '';
             document.getElementById('option1').value = '';
             document.getElementById('option2').value = '';
             document.getElementById('option3').value = '';
             document.getElementById('option4').value = '';
             document.getElementById('correctAnswer').value = '1';
-
-            // Refresh questions list
             await renderQuestionsList();
         } else {
             showAdminMessage('Error: ' + (result.message || 'Failed to add question'), 'error');
@@ -337,7 +580,6 @@ async function updateQuestion(id) {
         const result = await response.json();
         if (result.success) {
             showAdminMessage('Question updated', 'success');
-            // Clear edit state and form
             cancelEdit();
             await renderQuestionsList();
         } else {
@@ -363,40 +605,41 @@ function cancelEdit() {
 }
 
 async function clearQuestions() {
-    if (confirm('Are you sure you want to clear all questions?')) {
-        try {
-            const response = await fetch('php/questions.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                credentials: 'same-origin',
-                body: 'action=clear_all'
-            });
+    const setId = parseInt(document.getElementById('questionSetFilter')?.value || 0);
+    const confirmMsg = setId > 0
+        ? 'Are you sure you want to clear all questions in the selected set?'
+        : 'Are you sure you want to clear ALL questions?';
+    if (!confirm(confirmMsg)) return;
 
-            const result = await response.json();
+    try {
+        const response = await fetch('php/questions.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            credentials: 'same-origin',
+            body: `action=clear_all&set_id=${setId}`
+        });
 
-            if (result.success) {
-                // After clearing, switch to Questions screen and show the list
-                try {
-                    switchAdminScreen('questionsScreen');
-                    // ensure tabs are initialized then activate the list tab
-                    initQuestionTabs();
-                    const section = document.querySelector('.questions-section');
-                    if (section) {
-                        const listBtn = section.querySelector('.tab-btn[data-tab="listQuestions"]');
-                        if (listBtn) listBtn.click();
-                    }
-                } catch (e) {
-                    console.warn('Error switching to questions screen after clear:', e);
+        const result = await response.json();
+
+        if (result.success) {
+            try {
+                switchAdminScreen('questionsScreen');
+                initQuestionTabs();
+                const section = document.querySelector('.questions-section');
+                if (section) {
+                    const listBtn = section.querySelector('.tab-btn[data-tab="listQuestions"]');
+                    if (listBtn) listBtn.click();
                 }
-                // Refresh the questions list from server
-                await renderQuestionsList();
-                showAdminMessage('All questions cleared!', 'success');
-            } else {
-                showAdminMessage('Error: ' + (result.message || 'Failed to clear questions'), 'error');
+            } catch (e) {
+                console.warn('Error switching to questions screen:', e);
             }
-        } catch (error) {
-            showAdminMessage('Error clearing questions: ' + error.message, 'error');
+            await renderQuestionsList();
+            showAdminMessage('Questions cleared!', 'success');
+        } else {
+            showAdminMessage('Error: ' + (result.message || 'Failed to clear questions'), 'error');
         }
+    } catch (error) {
+        showAdminMessage('Error clearing questions: ' + error.message, 'error');
     }
 }
 
@@ -425,34 +668,89 @@ async function clearResults() {
 }
 
 async function deleteQuestion(id) {
-    if (confirm('Are you sure you want to delete this question?')) {
-        try {
-            const response = await fetch('php/questions.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                credentials: 'same-origin',
-                body: `action=delete&id=${id}`
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-                await renderQuestionsList();
-                showAdminMessage('Question deleted', 'success');
-            } else {
-                showAdminMessage('Error: ' + (result.message || 'Failed to delete question'), 'error');
+    showCustomConfirm(
+        'Are you sure you want to delete this question? This cannot be undone.',
+        async () => {
+            try {
+                const resp = await fetch('php/questions.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ action: 'delete', id })
+                });
+                const result = await resp.json();
+                if (result.success) {
+                    showAdminMessage('Question deleted', 'success');
+                    await renderQuestionsList();
+                    updateDashboardStats();
+                } else {
+                    showAdminMessage('Error: ' + (result.message || 'Failed to delete'), 'error');
+                }
+            } catch (e) {
+                showAdminMessage('Network error: ' + e.message, 'error');
             }
-        } catch (error) {
-            showAdminMessage('Error deleting question: ' + error.message, 'error');
         }
+    );
+}
+
+async function bulkDeleteQuestions() {
+    const checks = document.querySelectorAll('.question-checkbox:checked');
+    if (checks.length === 0) return;
+
+    const ids = Array.from(checks).map(c => parseInt(c.dataset.id));
+
+    showCustomConfirm(
+        `Are you sure you want to delete ${ids.length} selected questions? This cannot be undone.`,
+        async () => {
+            try {
+                const resp = await fetch('php/questions.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ action: 'bulk_delete', ids })
+                });
+                const result = await resp.json();
+                if (result.success) {
+                    showAdminMessage(`${result.count || ids.length} questions deleted!`, 'success');
+                    await renderQuestionsList();
+                    updateDashboardStats();
+                } else {
+                    showAdminMessage('Error: ' + (result.message || 'Failed to delete'), 'error');
+                }
+            } catch (e) {
+                showAdminMessage('Network error: ' + e.message, 'error');
+            }
+        }
+    );
+}
+
+function updateBulkActionsUI() {
+    const checks = document.querySelectorAll('.question-checkbox:checked');
+    const container = document.getElementById('bulkActionsContainer');
+    const countEl = document.getElementById('selectedCount');
+    const selectAllCheck = document.getElementById('selectAllQuestions');
+    const totalChecks = document.querySelectorAll('.question-checkbox').length;
+
+    if (checks.length > 0) {
+        if (container) container.style.display = 'block';
+        if (countEl) countEl.textContent = checks.length;
+        if (selectAllCheck) selectAllCheck.checked = (checks.length === totalChecks);
+    } else {
+        if (container) container.style.display = 'none';
+        if (selectAllCheck) selectAllCheck.checked = false;
     }
 }
 
 async function loadQuestionsFromDB() {
     try {
-        // Add cache-buster and no-store to ensure we always get fresh data from server
+        const setId = parseInt(document.getElementById('questionSetFilter')?.value || 0);
         const url = 'php/questions.php?_=' + Date.now();
-        const response = await fetch(url, { credentials: 'same-origin', cache: 'no-store' });
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            credentials: 'same-origin',
+            body: `action=get_all_admin&set_id=${setId}`
+        });
         return await response.json();
     } catch (error) {
         console.error('Error loading questions:', error);
@@ -462,53 +760,80 @@ async function loadQuestionsFromDB() {
 
 async function renderQuestionsList() {
     const questionsList = document.getElementById('questionsList');
+    const bulkActions = document.getElementById('bulkActionsContainer');
+    const selectAllContainer = document.getElementById('selectAllContainer');
+    const selectAllCheck = document.getElementById('selectAllQuestions');
+
+    if (bulkActions) bulkActions.style.display = 'none';
+    if (selectAllCheck) selectAllCheck.checked = false;
 
     try {
         const questions = await loadQuestionsFromDB();
-        // keep a local copy accessible for edit actions
         window.adminQuestions = questions;
 
         questionsList.innerHTML = '';
 
         if (questions.length === 0) {
-            questionsList.innerHTML = '<p>No questions added yet.</p>';
+            questionsList.innerHTML = '<p>No questions in this set yet.</p>';
+            if (selectAllContainer) selectAllContainer.style.display = 'none';
             return;
         }
+
+        if (selectAllContainer) selectAllContainer.style.display = 'flex';
 
         questions.forEach((question, index) => {
             const questionItem = document.createElement('div');
             questionItem.className = 'question-item';
+            questionItem.style.position = 'relative';
 
             questionItem.innerHTML = `
-                <h4>${index + 1}. ${question.question}</h4>
-                <ol type="A">
-                    ${question.options.map((option, i) =>
-                `<li class="${i === question.correctAnswer ? 'correct-option' : ''}">${option}</li>`
+                <div style="position:absolute; top:15px; left:15px; z-index:2;">
+                    <input type="checkbox" class="question-checkbox" data-id="${question.id}" style="width:20px; height:20px; cursor:pointer;">
+                </div>
+                <div style="padding-left:35px;">
+                    <h4 style="margin-top:0;">${index + 1}. ${escapeHtml(question.question)}</h4>
+                    <ol type="A">
+                        ${question.options.map((option, i) =>
+                `<li class="${i === question.correctAnswer ? 'correct-option' : ''}">${escapeHtml(option)}</li>`
             ).join('')}
-                </ol>
-                <div class="question-actions">
-                    <button class="btn" onclick="editQuestion(${question.id})">Edit</button>
-                    <button class="btn" onclick="deleteQuestion(${question.id})">Delete</button>
+                    </ol>
+                    <div class="question-actions">
+                        <button class="btn" onclick="editQuestion(${question.id})">Edit</button>
+                        <button class="btn btn-danger-outline" onclick="deleteQuestion(${question.id})">Delete</button>
+                    </div>
                 </div>
             `;
+
+            // Listen for checkbox changes
+            const check = questionItem.querySelector('.question-checkbox');
+            check.addEventListener('change', updateBulkActionsUI);
+
+            // Clicking the card itself (optional improvement: click to toggle)
+            // questionItem.addEventListener('click', (e) => {
+            //     if (e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT') {
+            //         check.checked = !check.checked;
+            //         updateBulkActionsUI();
+            //     }
+            // });
 
             questionsList.appendChild(questionItem);
         });
     } catch (error) {
         questionsList.innerHTML = '<p>Error loading questions.</p>';
+        if (selectAllContainer) selectAllContainer.style.display = 'none';
         console.error('Error rendering questions:', error);
     }
 }
 
+// ===== RESULTS =====
+
 function sortResults(field) {
-    // Toggle direction if same field
     if (currentSort.field === field) {
         currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
     } else {
         currentSort.field = field;
         currentSort.direction = 'asc';
     }
-
     renderResultsTable();
 }
 
@@ -523,16 +848,13 @@ async function renderResultsTable() {
             body: `action=get_all&sort_field=${currentSort.field}&sort_direction=${currentSort.direction}`
         });
 
-        // If server returns unauthorized, stop auto-refresh and show login
         if (!response.ok) {
             if (response.status === 401) {
-                // Admin session expired or not logged in
                 if (window.resultsRefreshInterval) {
                     clearInterval(window.resultsRefreshInterval);
                     window.resultsRefreshInterval = null;
                 }
                 showAdminMessage('Admin session required. Please log in.', 'error');
-                // Show login screen
                 if (typeof showScreen === 'function') showScreen('adminLoginScreen');
             }
             throw new Error('Failed to fetch results: ' + response.status);
@@ -566,6 +888,7 @@ async function renderResultsTable() {
                         <th onclick="sortResults('score')" style="cursor:pointer;">Score${sortIndicator('score')}</th>
                         <th onclick="sortResults('percentage')" style="cursor:pointer;">Percentage${sortIndicator('percentage')}</th>
                         <th onclick="sortResults('completion_date')" style="cursor:pointer;">Date${sortIndicator('completion_date')}</th>
+                        <th>Details</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -576,27 +899,183 @@ async function renderResultsTable() {
 
             tableHTML += `
                 <tr>
-                    <td>${result.name}</td>
-                    <td>${result.email}</td>
-                    <td>${result.phone}</td>
+                    <td>${escapeHtml(result.name)}</td>
+                    <td>${escapeHtml(result.email)}</td>
+                    <td>${escapeHtml(result.phone)}</td>
                     <td>${result.score}/${result.total_questions}</td>
                     <td style="color:${scoreColor}; font-weight:bold;">${result.percentage}%</td>
                     <td>${new Date(result.completion_date).toLocaleDateString()} ${new Date(result.completion_date).toLocaleTimeString()}</td>
+                    <td><button class="btn btn-sm" style="padding:4px 10px;font-size:0.8rem;" onclick="viewResultDetail(${result.student_id}, '${escapeHtml(result.name).replace(/'/g, "\\'")}')">🔍 Details</button></td>
                 </tr>
             `;
         });
 
-        tableHTML += `
-                </tbody>
-            </table>
-        `;
-
+        tableHTML += `</tbody></table>`;
         resultsTableContainer.innerHTML = tableHTML;
     } catch (error) {
         resultsTableContainer.innerHTML = '<p>Error loading results.</p>';
         console.error('Error rendering results:', error);
     }
 }
+
+// ===== RESULT DETAIL MODAL =====
+
+async function viewResultDetail(studentId) {
+    const modal = document.getElementById('resultDetailModal');
+    const content = document.getElementById('resultDetailContent');
+    if (!modal || !content) return;
+
+    // Reset scroll & show
+    modal.scrollTop = 0;
+    modal.style.display = 'flex';
+    content.innerHTML = `
+        <div style="text-align:center;padding:60px 20px;">
+            <div style="font-size:2.5rem;animation:spin 1s linear infinite;display:inline-block;">⏳</div>
+            <p style="margin-top:16px;color:#64748b;font-size:0.95rem;">Loading candidate details…</p>
+        </div>`;
+
+    try {
+        const resp = await fetch('php/results.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            credentials: 'same-origin',
+            body: `action=get_detail&student_id=${studentId}`
+        });
+        const data = await resp.json();
+
+        if (!data.success) {
+            content.innerHTML = `<div style="padding:32px;text-align:center;color:#ef4444;">⚠️ ${escapeHtml(data.message || 'Failed to load details')}</div>`;
+            return;
+        }
+
+        const pct = parseFloat(data.percentage);
+        const pctColor = pct >= 80 ? '#16a34a' : pct >= 60 ? '#d97706' : '#dc2626';
+        const pctBg = pct >= 80 ? '#f0fdf4' : pct >= 60 ? '#fffbeb' : '#fef2f2';
+        const grade = pct >= 80 ? 'Excellent' : pct >= 60 ? 'Good' : pct >= 40 ? 'Fair' : 'Needs Work';
+        const date = new Date(data.completion_date).toLocaleString();
+
+        // Score ring percentage for CSS
+        const ring = Math.round(pct);
+
+        let html = `
+        <div class="rd-header">
+            <div class="rd-header-top">
+                <div class="rd-student-info">
+                    <div class="rd-name">${escapeHtml(data.student.name)}</div>
+                    <div class="rd-meta">
+                        <span>📧 ${escapeHtml(data.student.email)}</span>
+                        <span>📞 ${escapeHtml(data.student.phone)}</span>
+                        <span>🗓️ ${date}</span>
+                    </div>
+                </div>
+                <div class="rd-score-badge" style="--pct-color:${pctColor};background:${pctBg};border-color:${pctColor};">
+                    <div class="rd-score-num" style="color:${pctColor};">${pct}%</div>
+                    <div class="rd-score-label">${data.score}/${data.total} correct</div>
+                    <div class="rd-grade" style="color:${pctColor};">${grade}</div>
+                </div>
+            </div>
+            <div class="rd-progress-bar-wrap">
+                <div class="rd-progress-fill" style="width:${ring}%;background:${pctColor};"></div>
+            </div>
+        </div>
+        <div class="rd-body">
+            <h3 class="rd-section-title">Question Breakdown <span class="rd-q-count">${data.details ? data.details.length : 0} questions</span></h3>
+        `;
+
+        if (!data.details || data.details.length === 0) {
+            html += `<div class="rd-empty">No question details available. Questions may have changed since this exam was taken.</div>`;
+        } else {
+            const correct = data.details.filter(d => d.is_correct).length;
+            const wrong = data.details.filter(d => !d.is_correct && !d.skipped).length;
+            const skipped = data.details.filter(d => d.skipped).length;
+
+            html += `
+            <div class="rd-summary-chips">
+                <span class="rd-chip rd-chip-correct">✅ ${correct} Correct</span>
+                <span class="rd-chip rd-chip-wrong">❌ ${wrong} Wrong</span>
+                <span class="rd-chip rd-chip-skip">⏭️ ${skipped} Skipped</span>
+            </div>
+            <div class="rd-questions-list">`;
+
+            data.details.forEach(d => {
+                const stateClass = d.skipped ? 'rd-q-skip' : (d.is_correct ? 'rd-q-correct' : 'rd-q-wrong');
+                const statusIcon = d.skipped ? '⏭️' : (d.is_correct ? '✅' : '❌');
+
+                html += `
+                <div class="rd-question-card ${stateClass}">
+                    <div class="rd-q-header">
+                        <span class="rd-q-num">Q${d.question_num}</span>
+                        <span class="rd-q-status-icon">${statusIcon}</span>
+                        <span class="rd-q-text">${escapeHtml(d.question)}</span>
+                    </div>
+                    <div class="rd-options">`;
+
+                d.options.forEach((opt, i) => {
+                    const isUserPick = (i === d.user_answer_index);
+                    const isCorrect = (i === d.correct_answer_index);
+                    let cls = 'rd-option';
+                    let badge = '';
+                    if (isCorrect && isUserPick) {
+                        cls += ' rd-opt-correct-picked';
+                        badge = '<span class="rd-opt-badge rd-opt-badge-correct">Your answer ✓</span>';
+                    } else if (isCorrect) {
+                        cls += ' rd-opt-correct';
+                        badge = '<span class="rd-opt-badge rd-opt-badge-correct">Correct answer</span>';
+                    } else if (isUserPick) {
+                        cls += ' rd-opt-wrong-picked';
+                        badge = '<span class="rd-opt-badge rd-opt-badge-wrong">Your answer ✗</span>';
+                    }
+                    const label = String.fromCharCode(65 + i);
+                    html += `<div class="${cls}"><span class="rd-opt-label">${label}</span><span class="rd-opt-text">${escapeHtml(opt)}</span>${badge}</div>`;
+                });
+
+                if (d.skipped) {
+                    html += `<div class="rd-option rd-opt-skipped"><span class="rd-opt-label">—</span><span class="rd-opt-text" style="color:#94a3b8;font-style:italic;">Not answered / Skipped</span></div>`;
+                }
+
+                html += `</div></div>`;
+            });
+
+            html += `</div>`; // rd-questions-list
+        }
+
+        html += `</div>`; // rd-body
+        content.innerHTML = html;
+
+        // CRITICAL: Force modal-inner to handle vertical overflow correctly
+        const modalInner = modal.querySelector('.rd-modal-inner');
+        if (modalInner) {
+            modalInner.scrollTop = 0;
+            modalInner.style.overflowY = 'hidden'; // Header/Body are internal scrolls
+        }
+
+        // Ensure rd-body fills remaining space and scrolls
+        const rdBody = content.querySelector('.rd-body');
+        if (rdBody) rdBody.scrollTop = 0;
+
+    } catch (e) {
+        content.innerHTML = `<div style="padding:32px;text-align:center;color:#ef4444;">Network error: ${escapeHtml(e.message)}</div>`;
+    }
+}
+
+function closeResultDetailModal() {
+    const modal = document.getElementById('resultDetailModal');
+    if (modal) modal.style.display = 'none';
+}
+
+// Close modal on overlay click
+document.addEventListener('DOMContentLoaded', function () {
+    const modal = document.getElementById('resultDetailModal');
+    if (modal) {
+        modal.addEventListener('click', function (e) {
+            if (e.target === modal) closeResultDetailModal();
+        });
+    }
+});
+
+
+
+// ===== QUESTIONS EDIT =====
 
 function editQuestion(id) {
     if (!window.adminQuestions) return;
@@ -609,22 +1088,16 @@ function editQuestion(id) {
     document.getElementById('option2').value = q.options[1] || '';
     document.getElementById('option3').value = q.options[2] || '';
     document.getElementById('option4').value = q.options[3] || '';
-    // correctAnswer stored as zero-based in API; UI expects 1-4
     document.getElementById('correctAnswer').value = (q.correctAnswer !== undefined) ? (q.correctAnswer + 1) : 1;
 
-    // toggle UI
     const addBtn = document.getElementById('addQuestionBtn');
     if (addBtn) addBtn.textContent = 'Update Question';
     const cancelBtn = document.getElementById('cancelEditBtn');
     if (cancelBtn) cancelBtn.style.display = 'inline-block';
 
-    // Switch to 'Add Question' tab and scroll to form
     const addQuestionTab = document.querySelector('.tab-btn[data-tab="addQuestion"]');
-    if (addQuestionTab) {
-        addQuestionTab.click();
-    }
+    if (addQuestionTab) addQuestionTab.click();
 
-    // Scroll the form into view
     const questionTextEl = document.getElementById('questionText');
     if (questionTextEl) {
         setTimeout(() => {
@@ -647,7 +1120,8 @@ async function bulkUploadQuestions() {
         return;
     }
 
-    // Read and parse JSON file
+    const set_id = parseInt(document.getElementById('bulkSetSelect')?.value || 0);
+
     const reader = new FileReader();
     reader.onload = async (e) => {
         try {
@@ -657,7 +1131,6 @@ async function bulkUploadQuestions() {
                 return;
             }
 
-            // Validate each question
             for (const q of data.questions) {
                 if (!q.question || !Array.isArray(q.options) || q.options.length !== 4 || q.correctAnswer === undefined) {
                     showAdminMessage('Invalid question format. Each must have: question, options (4 items), correctAnswer', 'error');
@@ -665,12 +1138,11 @@ async function bulkUploadQuestions() {
                 }
             }
 
-            // Send to server for bulk insert
             const response = await fetch('php/questions.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'same-origin',
-                body: JSON.stringify({ action: 'bulk_add', questions: data.questions })
+                body: JSON.stringify({ action: 'bulk_add', questions: data.questions, set_id })
             });
 
             const result = await response.json();
@@ -685,27 +1157,23 @@ async function bulkUploadQuestions() {
             showAdminMessage('Error parsing JSON: ' + error.message, 'error');
         }
     };
-    reader.onerror = () => {
-        showAdminMessage('Error reading file', 'error');
-    };
+    reader.onerror = () => { showAdminMessage('Error reading file', 'error'); };
     reader.readAsText(file);
 }
 
-// Save interview time handler
+// ===== SETTINGS =====
+
 function saveInterviewTime() {
     const interviewTimeInput = document.getElementById('interviewTime');
     if (!interviewTimeInput) return;
 
     const value = parseInt(interviewTimeInput.value, 10);
-
-    // Validate input
     if (isNaN(value) || value < 5 || value > 120) {
         showAdminMessage('Interview time must be between 5 and 120 minutes', 'error');
         interviewTimeInput.value = '';
         return;
     }
 
-    // Send to server to save in database
     fetch('php/settings.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -716,45 +1184,28 @@ function saveInterviewTime() {
         .then(result => {
             if (result.success) {
                 showAdminMessage('Interview time updated', 'success');
-                // Broadcast update to all open windows/tabs
                 if (window.opener && !window.opener.closed) {
-                    window.opener.postMessage({ type: 'update-interview-time', value: value }, '*');
+                    window.opener.postMessage({ type: 'update-interview-time', value }, '*');
                 }
             } else {
-                showAdminMessage('Error: ' + (result.message || 'Failed to update interview time'), 'error');
+                showAdminMessage('Error: ' + (result.message || ''), 'error');
             }
         })
-        .catch(err => {
-            showAdminMessage('Network error saving interview time', 'error');
-            console.error('Save interview time error:', err);
-        });
+        .catch(err => { showAdminMessage('Network error saving interview time', 'error'); });
 }
 
-// Initialize admin panel with saved settings
 function initializeAdminPanel() {
     const interviewTimeInput = document.getElementById('interviewTime');
     if (interviewTimeInput) {
-        // Load saved interview time from database via settings.php
         fetch('php/settings.php?action=get_interview_time')
             .then(res => res.json())
             .then(result => {
-                if (result.success && result.interview_time) {
-                    interviewTimeInput.value = result.interview_time;
-                } else {
-                    interviewTimeInput.value = '30'; // Default fallback
-                }
+                interviewTimeInput.value = result.success && result.interview_time ? result.interview_time : '30';
             })
-            .catch(err => {
-                console.error('Error loading interview time:', err);
-                interviewTimeInput.value = '30'; // Default fallback
-            });
+            .catch(() => { interviewTimeInput.value = '30'; });
     }
 
-    // Start auto-refresh of results immediately when admin panel loads
-    // This ensures new results appear in real-time even if admin isn't on Results tab
-    if (window.resultsRefreshInterval) {
-        clearInterval(window.resultsRefreshInterval);
-    }
+    if (window.resultsRefreshInterval) clearInterval(window.resultsRefreshInterval);
     renderResultsTable();
     window.resultsRefreshInterval = setInterval(renderResultsTable, 3000);
 }
@@ -774,13 +1225,11 @@ async function loadSettings() {
         showAdminMessage('Error loading settings: ' + error.message, 'error');
     }
 
-    // Load welcome content
     await loadWelcomeContent();
 }
 
 async function saveExamStatus(status) {
     try {
-        // Convert boolean to integer (1 or 0) for PHP
         const statusValue = status ? 1 : 0;
         const response = await fetch('php/settings.php', {
             method: 'POST',
@@ -792,7 +1241,7 @@ async function saveExamStatus(status) {
 
         if (result.success) {
             showAdminMessage('Exam status updated: ' + (status ? 'Running' : 'Not Running'), 'success');
-            updateDashboardStats(); // Refresh stats with new exam status
+            updateDashboardStats();
         } else {
             showAdminMessage('Error updating exam status: ' + (result.message || ''), 'error');
         }
@@ -810,14 +1259,17 @@ async function loadWelcomeContent() {
 
         if (result.success && result.welcome_content) {
             const content = result.welcome_content;
+            document.getElementById('platformName').value = content.platform_name || '';
+            document.getElementById('headerSubtitle').value = content.header_subtitle || '';
             document.getElementById('welcomeTitle').value = content.title || '';
             document.getElementById('welcomeDescription').value = content.description || '';
             document.getElementById('welcomeInstructions').value = content.instructions || '';
         } else {
-            // Set defaults if no content found
-            document.getElementById('welcomeTitle').value = 'Welcome to the Flutter Mock Interview';
-            document.getElementById('welcomeDescription').value = 'This quiz will test your knowledge of Flutter development. The interview will automatically close if you switch tabs or click outside the browser window.';
-            document.getElementById('welcomeInstructions').value = 'There are multiple-choice questions about Flutter\nSelect one answer for each question\nYou cannot go back to previous questions\nThe interview will close if you switch tabs or click outside\nComplete the interview within the time limit';
+            document.getElementById('platformName').value = 'Interview Platform';
+            document.getElementById('headerSubtitle').value = 'Test your knowledge';
+            document.getElementById('welcomeTitle').value = 'Welcome to the Interview';
+            document.getElementById('welcomeDescription').value = 'This quiz will test your knowledge. The interview will automatically close if you switch tabs or click outside the browser window.';
+            document.getElementById('welcomeInstructions').value = 'There are multiple-choice questions\nSelect one answer for each question\nYou cannot go back to previous questions\nThe interview will close if you switch tabs or click outside\nComplete the interview within the time limit';
         }
     } catch (error) {
         console.error('Error loading welcome content:', error);
@@ -825,58 +1277,40 @@ async function loadWelcomeContent() {
 }
 
 async function saveWelcomeContent() {
+    const platform_name = document.getElementById('platformName').value.trim();
+    const header_subtitle = document.getElementById('headerSubtitle').value.trim();
     const title = document.getElementById('welcomeTitle').value.trim();
     const description = document.getElementById('welcomeDescription').value.trim();
     const instructions = document.getElementById('welcomeInstructions').value.trim();
-
-    if (!title || !description || !instructions) {
-        showAdminMessage('Please fill in all welcome content fields', 'error', 'welcomeContentMessage');
-        return;
-    }
 
     try {
         const response = await fetch('php/settings.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             credentials: 'same-origin',
-            body: `action=save_welcome_content&title=${encodeURIComponent(title)}&description=${encodeURIComponent(description)}&instructions=${encodeURIComponent(instructions)}`
+            body: `action=save_welcome_content&title=${encodeURIComponent(title)}&description=${encodeURIComponent(description)}&instructions=${encodeURIComponent(instructions)}&platform_name=${encodeURIComponent(platform_name)}&header_subtitle=${encodeURIComponent(header_subtitle)}`
         });
 
         const result = await response.json();
 
         if (result.success) {
-            showAdminMessage('Welcome content saved successfully!', 'success', 'welcomeContentMessage');
+            showAdminMessage('Home screen content saved successfully!', 'success', 'welcomeContentMessage');
         } else {
-            showAdminMessage('Error saving welcome content: ' + (result.message || ''), 'error', 'welcomeContentMessage');
+            showAdminMessage('Error saving content: ' + (result.message || ''), 'error', 'welcomeContentMessage');
         }
     } catch (error) {
-        showAdminMessage('Network error saving welcome content: ' + error.message, 'error', 'welcomeContentMessage');
+        showAdminMessage('Network error: ' + error.message, 'error', 'welcomeContentMessage');
     }
 }
 
-// Update showAdminMessage to accept optional elementId
-function showAdminMessageOriginal(message, type = 'success') {
-    const el = document.getElementById('adminMessage');
-    if (!el) return;
-    el.textContent = message;
-    el.classList.remove('success', 'error');
-    el.classList.add(type === 'error' ? 'error' : 'success');
-    setTimeout(() => {
-        el.textContent = '';
-        el.classList.remove('success', 'error');
-    }, 5000);
-}
+// ===== UTILITY =====
 
-// Override showAdminMessage to support optional elementId
-const originalShowAdminMessage = showAdminMessage;
-function showAdminMessage(message, type = 'success', elementId = null) {
-    const el = elementId ? document.getElementById(elementId) : document.getElementById('adminMessage');
-    if (!el) return;
-    el.textContent = message;
-    el.classList.remove('success', 'error');
-    el.classList.add(type === 'error' ? 'error' : 'success');
-    setTimeout(() => {
-        el.textContent = '';
-        el.classList.remove('success', 'error');
-    }, 5000);
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }

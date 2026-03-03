@@ -4,10 +4,36 @@ session_start();
 
 header('Content-Type: application/json');
 
+function getActiveSetId($conn)
+{
+    // Ensure active_question_set_id column exists
+    @$conn->query("ALTER TABLE settings ADD COLUMN active_question_set_id INTEGER DEFAULT 1");
+    $result = $conn->query("SELECT active_question_set_id FROM settings WHERE id = 1");
+    if ($result && $result->num_rows > 0) {
+        $row = $result->fetch_assoc();
+        return (int) ($row['active_question_set_id'] ?? 1);
+    }
+    return 1;
+}
+
+function hasSetIdColumn($conn)
+{
+    $res = @$conn->query("SELECT set_id FROM questions LIMIT 1");
+    return ($res !== false);
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    // Get all questions
+    // Get questions for the active set
     $conn = getDBConnection();
-    $result = $conn->query("SELECT * FROM questions ORDER BY id ASC");
+
+    $setId = getActiveSetId($conn);
+    $useSetId = hasSetIdColumn($conn);
+
+    if ($useSetId) {
+        $result = $conn->query("SELECT * FROM questions WHERE set_id = $setId ORDER BY id ASC");
+    } else {
+        $result = $conn->query("SELECT * FROM questions ORDER BY id ASC");
+    }
 
     $questions = [];
     while ($row = $result->fetch_assoc()) {
@@ -58,10 +84,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $action = $input['action'] ?? '';
     } else {
         $action = $_POST['action'] ?? '';
+        $input = $_POST;
     }
 
-    // Require admin session for modifying actions
-    if (in_array($action, ['add', 'update', 'delete', 'clear_all', 'bulk_add'])) {
+    // Admin-only actions
+    if (in_array($action, ['add', 'update', 'delete', 'clear_all', 'bulk_add', 'get_all_admin'])) {
         if (empty($_SESSION['is_admin']) || $_SESSION['is_admin'] !== true) {
             http_response_code(401);
             echo json_encode(['success' => false, 'message' => 'Unauthorized']);
@@ -69,13 +96,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
     }
 
-    if ($action === 'add') {
-        $question = $_POST['question'] ?? '';
-        $option1 = $_POST['option1'] ?? '';
-        $option2 = $_POST['option2'] ?? '';
-        $option3 = $_POST['option3'] ?? '';
-        $option4 = $_POST['option4'] ?? '';
-        $correct_answer = $_POST['correct_answer'] ?? 1;
+    if ($action === 'get_all_admin') {
+        // Return ALL questions grouped by set (for admin questions list)
+        $set_id = (int) ($input['set_id'] ?? 0);
+        $conn = getDBConnection();
+        $useSetId = hasSetIdColumn($conn);
+
+        if ($useSetId && $set_id > 0) {
+            $result = $conn->query("SELECT * FROM questions WHERE set_id = $set_id ORDER BY id ASC");
+        } elseif ($useSetId) {
+            $result = $conn->query("SELECT * FROM questions ORDER BY set_id ASC, id ASC");
+        } else {
+            $result = $conn->query("SELECT * FROM questions ORDER BY id ASC");
+        }
+
+        $questions = [];
+        while ($row = $result->fetch_assoc()) {
+            $questions[] = [
+                'id' => $row['id'],
+                'set_id' => $row['set_id'] ?? 1,
+                'question' => $row['question'],
+                'options' => [$row['option1'], $row['option2'], $row['option3'], $row['option4']],
+                'correctAnswer' => (int) $row['correct_answer'] - 1,
+            ];
+        }
+        echo json_encode($questions);
+        $conn->close();
+
+    } elseif ($action === 'add') {
+        $question = $input['question'] ?? '';
+        $option1 = $input['option1'] ?? '';
+        $option2 = $input['option2'] ?? '';
+        $option3 = $input['option3'] ?? '';
+        $option4 = $input['option4'] ?? '';
+        $correct_answer = $input['correct_answer'] ?? 1;
 
         if (empty($question) || empty($option1) || empty($option2) || empty($option3) || empty($option4)) {
             echo json_encode(['success' => false, 'message' => 'All fields are required']);
@@ -83,8 +137,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
 
         $conn = getDBConnection();
-        $stmt = $conn->prepare("INSERT INTO questions (question, option1, option2, option3, option4, correct_answer) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("sssssi", $question, $option1, $option2, $option3, $option4, $correct_answer);
+        $useSetId = hasSetIdColumn($conn);
+        $activeSetId = $useSetId ? getActiveSetId($conn) : 1;
+        $set_id = (int) ($input['set_id'] ?? $activeSetId);
+
+        if ($useSetId) {
+            $stmt = $conn->prepare("INSERT INTO questions (question, option1, option2, option3, option4, correct_answer, set_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("sssssii", $question, $option1, $option2, $option3, $option4, $correct_answer, $set_id);
+        } else {
+            $stmt = $conn->prepare("INSERT INTO questions (question, option1, option2, option3, option4, correct_answer) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("sssssi", $question, $option1, $option2, $option3, $option4, $correct_answer);
+        }
 
         if ($stmt->execute()) {
             echo json_encode(['success' => true]);
@@ -96,8 +159,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $conn->close();
 
     } elseif ($action === 'bulk_add') {
-        $input = json_decode(file_get_contents('php://input'), true);
         $questions = $input['questions'] ?? [];
+        $set_id = (int) ($input['set_id'] ?? 0);
 
         if (empty($questions) || !is_array($questions)) {
             echo json_encode(['success' => false, 'message' => 'Invalid questions format']);
@@ -105,6 +168,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
 
         $conn = getDBConnection();
+        $useSetId = hasSetIdColumn($conn);
+        if ($set_id === 0) {
+            $set_id = $useSetId ? getActiveSetId($conn) : 1;
+        }
+
         $inserted = 0;
         $errors = [];
 
@@ -114,7 +182,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $option2 = $q['options'][1] ?? '';
             $option3 = $q['options'][2] ?? '';
             $option4 = $q['options'][3] ?? '';
-            // correctAnswer is 0-based in JSON; store as 1-based in DB
             $correct_answer = (isset($q['correctAnswer']) ? intval($q['correctAnswer']) + 1 : 1);
 
             if (empty($question) || empty($option1) || empty($option2) || empty($option3) || empty($option4)) {
@@ -122,13 +189,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 continue;
             }
 
-            $stmt = $conn->prepare("INSERT INTO questions (question, option1, option2, option3, option4, correct_answer) VALUES (?, ?, ?, ?, ?, ?)");
-            if (!$stmt) {
-                $errors[] = "Prepare error: " . $conn->error;
-                continue;
+            if ($useSetId) {
+                $stmt = $conn->prepare("INSERT INTO questions (question, option1, option2, option3, option4, correct_answer, set_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                if (!$stmt) {
+                    $errors[] = "Prepare error: " . $conn->error;
+                    continue;
+                }
+                $stmt->bind_param("sssssii", $question, $option1, $option2, $option3, $option4, $correct_answer, $set_id);
+            } else {
+                $stmt = $conn->prepare("INSERT INTO questions (question, option1, option2, option3, option4, correct_answer) VALUES (?, ?, ?, ?, ?, ?)");
+                if (!$stmt) {
+                    $errors[] = "Prepare error: " . $conn->error;
+                    continue;
+                }
+                $stmt->bind_param("sssssi", $question, $option1, $option2, $option3, $option4, $correct_answer);
             }
 
-            $stmt->bind_param("sssssi", $question, $option1, $option2, $option3, $option4, $correct_answer);
             if ($stmt->execute()) {
                 $inserted++;
             } else {
@@ -140,22 +216,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $conn->close();
 
         if ($inserted > 0) {
-            echo json_encode([
-                'success' => true,
-                'count' => $inserted,
-                'errors' => $errors
-            ]);
+            echo json_encode(['success' => true, 'count' => $inserted, 'errors' => $errors]);
         } else {
-            echo json_encode([
-                'success' => false,
-                'message' => 'No questions were imported',
-                'errors' => $errors
-            ]);
+            echo json_encode(['success' => false, 'message' => 'No questions were imported', 'errors' => $errors]);
         }
 
     } elseif ($action === 'delete') {
-        $id = $_POST['id'] ?? 0;
-
+        $id = $input['id'] ?? 0;
         $conn = getDBConnection();
         $stmt = $conn->prepare("DELETE FROM questions WHERE id = ?");
         $stmt->bind_param("i", $id);
@@ -169,13 +236,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $stmt->close();
         $conn->close();
 
-    } elseif ($action === 'clear_all') {
+    } elseif ($action === 'bulk_delete') {
+        $ids = isset($input['ids']) ? array_map('intval', (array) $input['ids']) : [];
+        if (empty($ids)) {
+            echo json_encode(['success' => false, 'message' => 'No IDs provided']);
+            exit;
+        }
+
         $conn = getDBConnection();
-        $stmt = $conn->prepare("DELETE FROM questions");
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $types = str_repeat('i', count($ids));
+
+        $stmt = $conn->prepare("DELETE FROM questions WHERE id IN ($placeholders)");
+        $stmt->bind_param($types, ...$ids);
 
         if ($stmt->execute()) {
-            // Reset auto increment
-            $conn->query("ALTER TABLE questions AUTO_INCREMENT = 1");
+            $count = isset($stmt->affected_rows) ? $stmt->affected_rows : count($ids);
+            echo json_encode(['success' => true, 'count' => $count]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Failed to delete questions']);
+        }
+
+        $stmt->close();
+        $conn->close();
+
+    } elseif ($action === 'clear_all') {
+        $set_id = (int) ($input['set_id'] ?? 0);
+        $conn = getDBConnection();
+        $useSetId = hasSetIdColumn($conn);
+
+        if ($useSetId && $set_id > 0) {
+            $stmt = $conn->prepare("DELETE FROM questions WHERE set_id = ?");
+            $stmt->bind_param("i", $set_id);
+        } else {
+            $stmt = $conn->prepare("DELETE FROM questions");
+        }
+
+        if ($stmt->execute()) {
             echo json_encode(['success' => true]);
         } else {
             echo json_encode(['success' => false, 'message' => 'Failed to clear questions']);
@@ -183,14 +280,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
         $stmt->close();
         $conn->close();
+
     } elseif ($action === 'update') {
-        $id = $_POST['id'] ?? 0;
-        $question = $_POST['question'] ?? '';
-        $option1 = $_POST['option1'] ?? '';
-        $option2 = $_POST['option2'] ?? '';
-        $option3 = $_POST['option3'] ?? '';
-        $option4 = $_POST['option4'] ?? '';
-        $correct_answer = $_POST['correct_answer'] ?? 1;
+        $id = $input['id'] ?? 0;
+        $question = $input['question'] ?? '';
+        $option1 = $input['option1'] ?? '';
+        $option2 = $input['option2'] ?? '';
+        $option3 = $input['option3'] ?? '';
+        $option4 = $input['option4'] ?? '';
+        $correct_answer = $input['correct_answer'] ?? 1;
 
         if (empty($id) || empty($question) || empty($option1) || empty($option2) || empty($option3) || empty($option4)) {
             echo json_encode(['success' => false, 'message' => 'All fields are required']);
