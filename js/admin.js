@@ -644,27 +644,59 @@ async function clearQuestions() {
 }
 
 async function clearResults() {
-    if (confirm('Are you sure you want to clear all student results? This action cannot be undone.')) {
-        try {
-            const response = await fetch('php/results.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                credentials: 'same-origin',
-                body: 'action=clear_all'
-            });
+    showCustomConfirm(
+        'Are you sure you want to clear all student results? This action cannot be undone.',
+        async () => {
+            try {
+                const response = await fetch('php/results.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    credentials: 'same-origin',
+                    body: 'action=clear_all'
+                });
 
-            const result = await response.json();
+                const result = await response.json();
 
-            if (result.success) {
-                await renderResultsTable();
-                showAdminMessage('All results cleared!', 'success');
-            } else {
-                showAdminMessage('Error: ' + (result.message || 'Failed to clear results'), 'error');
+                if (result.success) {
+                    await renderResultsTable();
+                    showAdminMessage('All results cleared!', 'success');
+                    updateDashboardStats();
+                } else {
+                    showAdminMessage('Error: ' + (result.message || 'Failed to clear results'), 'error');
+                }
+            } catch (error) {
+                showAdminMessage('Error clearing results: ' + error.message, 'error');
             }
-        } catch (error) {
-            showAdminMessage('Error clearing results: ' + error.message, 'error');
         }
-    }
+    );
+}
+
+async function deleteResult(studentId, name) {
+    showCustomConfirm(
+        `Are you sure you want to delete results for "${name}"? This action cannot be undone.`,
+        async () => {
+            try {
+                const response = await fetch('php/results.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    credentials: 'same-origin',
+                    body: `action=delete_individual&student_id=${studentId}`
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    await renderResultsTable();
+                    showAdminMessage('Result deleted successfully!', 'success');
+                    updateDashboardStats();
+                } else {
+                    showAdminMessage('Error: ' + (result.message || 'Failed to delete result'), 'error');
+                }
+            } catch (error) {
+                showAdminMessage('Error deleting result: ' + error.message, 'error');
+            }
+        }
+    );
 }
 
 async function deleteQuestion(id) {
@@ -888,7 +920,7 @@ async function renderResultsTable() {
                         <th onclick="sortResults('score')" style="cursor:pointer;">Score${sortIndicator('score')}</th>
                         <th onclick="sortResults('percentage')" style="cursor:pointer;">Percentage${sortIndicator('percentage')}</th>
                         <th onclick="sortResults('completion_date')" style="cursor:pointer;">Date${sortIndicator('completion_date')}</th>
-                        <th>Details</th>
+                        <th style="text-align:right;">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -905,7 +937,10 @@ async function renderResultsTable() {
                     <td>${result.score}/${result.total_questions}</td>
                     <td style="color:${scoreColor}; font-weight:bold;">${result.percentage}%</td>
                     <td>${new Date(result.completion_date).toLocaleDateString()} ${new Date(result.completion_date).toLocaleTimeString()}</td>
-                    <td><button class="btn btn-sm" style="padding:4px 10px;font-size:0.8rem;" onclick="viewResultDetail(${result.student_id}, '${escapeHtml(result.name).replace(/'/g, "\\'")}')">🔍 Details</button></td>
+                    <td style="text-align:right; white-space:nowrap;">
+                        <button class="btn btn-sm" style="padding:4px 10px;font-size:0.8rem;" onclick="viewResultDetail(${result.student_id}, '${escapeHtml(result.name).replace(/'/g, "\\'")}')">🔍 Details</button>
+                        <button class="btn btn-sm btn-danger-outline" style="padding:4px 10px;font-size:0.8rem; margin-left:4px;" title="Delete Result" onclick="deleteResult(${result.student_id}, '${escapeHtml(result.name).replace(/'/g, "\\'")}')">🗑️</button>
+                    </td>
                 </tr>
             `;
         });

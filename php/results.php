@@ -8,7 +8,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
     // 'save' is allowed for students; admin-only actions require session
-    if (in_array($action, ['get_all', 'get_detail', 'clear_all'])) {
+    if (in_array($action, ['get_all', 'get_detail', 'clear_all', 'delete_individual'])) {
         if (empty($_SESSION['is_admin']) || $_SESSION['is_admin'] !== true) {
             http_response_code(401);
             echo json_encode(['success' => false, 'message' => 'Unauthorized']);
@@ -69,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                  WHERE student_id = ?"
             );
             $update_stmt->bind_param("iidsi", $score, $total_questions, $percentage, $answers, $student_id);
-            
+
             if ($update_stmt->execute()) {
                 echo json_encode(['success' => true, 'message' => 'Result updated successfully']);
             } else {
@@ -128,7 +128,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $conn->close();
 
     } elseif ($action === 'get_detail') {
-        $student_id = (int)($_POST['student_id'] ?? 0);
+        $student_id = (int) ($_POST['student_id'] ?? 0);
 
         if (!$student_id) {
             echo json_encode(['success' => false, 'message' => 'Student ID required']);
@@ -165,19 +165,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $userAnswers = [];
         }
 
-        // Get all questions (unshuffled from DB so we can match by question order)
-        // We store question_ids in the answers implicitly via index, so fetch all questions in DB insertion order
-        $engine = $_ENV['DB_ENGINE'] ?? 'mysql';
-        
-        // Get active set
+        // Get all questions
         $settingsResult = $conn->query("SELECT active_question_set_id FROM settings WHERE id = 1");
         $activeSetId = 1;
         if ($settingsResult && $settingsResult->num_rows > 0) {
             $settingsRow = $settingsResult->fetch_assoc();
-            $activeSetId = (int)($settingsRow['active_question_set_id'] ?? 1);
+            $activeSetId = (int) ($settingsRow['active_question_set_id'] ?? 1);
         }
 
-        // Check if set_id column exists
         $hasSetId = false;
         $colCheck = $conn->query("SELECT set_id FROM questions LIMIT 1");
         if ($colCheck !== false) {
@@ -195,62 +190,82 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $questions[] = $q;
         }
 
-        // Build detail breakdown
-        // Note: answers are stored as array indexed by the question position AT THE TIME of the quiz.
-        // Since questions are shuffled per candidate, we store answers indexed 0..N-1 matching
-        // the shuffled order. We can't recover the exact shuffle, but we can show what we know.
-        // For the detail view, we'll pair userAnswers[i] with questions[i] in DB insertion order.
         $details = [];
         foreach ($questions as $i => $q) {
-            $userAnswerIdx = isset($userAnswers[$i]) ? (int)$userAnswers[$i] : -1;
-            $correctAnswerIdx = (int)$q['correct_answer'] - 1; // stored 1-based in DB
+            $userAnswerIdx = isset($userAnswers[$i]) ? (int) $userAnswers[$i] : -1;
+            $correctAnswerIdx = (int) $q['correct_answer'] - 1;
 
             $options = [$q['option1'], $q['option2'], $q['option3'], $q['option4']];
 
             $details[] = [
                 'question_num' => $i + 1,
-                'question'     => $q['question'],
-                'options'      => $options,
+                'question' => $q['question'],
+                'options' => $options,
                 'correct_answer_index' => $correctAnswerIdx,
-                'user_answer_index'    => $userAnswerIdx,
-                'is_correct'   => ($userAnswerIdx >= 0 && $userAnswerIdx === $correctAnswerIdx),
-                'skipped'      => ($userAnswerIdx < 0),
+                'user_answer_index' => $userAnswerIdx,
+                'is_correct' => ($userAnswerIdx >= 0 && $userAnswerIdx === $correctAnswerIdx),
+                'skipped' => ($userAnswerIdx < 0),
             ];
         }
 
         echo json_encode([
-            'success'    => true,
-            'student'    => [
-                'name'  => $row['name'],
+            'success' => true,
+            'student' => [
+                'name' => $row['name'],
                 'email' => $row['email'],
                 'phone' => $row['phone'],
             ],
-            'score'      => (int)$row['score'],
-            'total'      => (int)$row['total_questions'],
-            'percentage' => (float)$row['percentage'],
+            'score' => (int) $row['score'],
+            'total' => (int) $row['total_questions'],
+            'percentage' => (float) $row['percentage'],
             'completion_date' => $row['completion_date'],
-            'details'    => $details,
+            'details' => $details,
         ]);
 
+        $conn->close();
+
+    } elseif ($action === 'delete_individual') {
+        $student_id = (int) ($_POST['student_id'] ?? 0);
+        if (!$student_id) {
+            echo json_encode(['success' => false, 'message' => 'Student ID required']);
+            exit;
+        }
+
+        $conn = getDBConnection();
+        $conn->begin_transaction();
+
+        try {
+            // Delete result first (due to FK)
+            $stmt1 = $conn->prepare("DELETE FROM results WHERE student_id = ?");
+            $stmt1->bind_param("i", $student_id);
+            $stmt1->execute();
+
+            // Delete student
+            $stmt2 = $conn->prepare("DELETE FROM students WHERE id = ?");
+            $stmt2->bind_param("i", $student_id);
+            $stmt2->execute();
+
+            $conn->commit();
+            echo json_encode(['success' => true, 'message' => 'Result deleted successfully']);
+        } catch (Exception $e) {
+            $conn->rollback();
+            echo json_encode(['success' => false, 'message' => 'Error deleting result: ' . $e->getMessage()]);
+        }
         $conn->close();
 
     } elseif ($action === 'clear_all') {
         $conn = getDBConnection();
         $engine = $_ENV['DB_ENGINE'] ?? 'mysql';
 
-        // Start transaction
         $conn->begin_transaction();
 
         try {
-            // Delete all results
             $stmt1 = $conn->prepare("DELETE FROM results");
             $stmt1->execute();
 
-            // Delete all students
             $stmt2 = $conn->prepare("DELETE FROM students");
             $stmt2->execute();
 
-            // Reset auto increment - engine specific
             if ($engine === 'sqlite') {
                 $conn->query("DELETE FROM sqlite_sequence WHERE name='results'");
                 $conn->query("DELETE FROM sqlite_sequence WHERE name='students'");
