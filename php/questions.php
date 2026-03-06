@@ -1,6 +1,15 @@
 <?php
+// Start output buffering to prevent any accidental output
+ob_start();
+
+// Suppress PHP warnings/notices that might corrupt JSON output
+error_reporting(E_ERROR | E_PARSE);
+
 require_once 'config.php';
 session_start();
+
+// Clean any previous output
+ob_clean();
 
 header('Content-Type: application/json');
 
@@ -25,6 +34,10 @@ function hasSetIdColumn($conn)
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // Get questions for the active set
     $conn = getDBConnection();
+    if (!$conn) {
+        echo json_encode([]);
+        exit;
+    }
 
     $setId = getActiveSetId($conn);
     $useSetId = hasSetIdColumn($conn);
@@ -36,36 +49,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     $questions = [];
-    while ($row = $result->fetch_assoc()) {
-        // Create array of options with their original indices
-        $options = [
-            ['text' => $row['option1'], 'originalIndex' => 0],
-            ['text' => $row['option2'], 'originalIndex' => 1],
-            ['text' => $row['option3'], 'originalIndex' => 2],
-            ['text' => $row['option4'], 'originalIndex' => 3]
-        ];
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            // Create array of options with their original indices
+            $options = [
+                ['text' => $row['option1'], 'originalIndex' => 0],
+                ['text' => $row['option2'], 'originalIndex' => 1],
+                ['text' => $row['option3'], 'originalIndex' => 2],
+                ['text' => $row['option4'], 'originalIndex' => 3]
+            ];
 
-        // Shuffle the options for this student
-        shuffle($options);
+            // Shuffle the options for this student
+            shuffle($options);
 
-        // Find the new index of the correct answer after shuffling
-        $correctAnswerOriginalIndex = (int) $row['correct_answer'] - 1;
-        $newCorrectAnswerIndex = 0;
-        $shuffledOptions = [];
+            // Find the new index of the correct answer after shuffling
+            $correctAnswerOriginalIndex = (int) $row['correct_answer'] - 1;
+            $newCorrectAnswerIndex = 0;
+            $shuffledOptions = [];
 
-        foreach ($options as $key => $option) {
-            $shuffledOptions[] = $option['text'];
-            if ($option['originalIndex'] === $correctAnswerOriginalIndex) {
-                $newCorrectAnswerIndex = $key;
+            foreach ($options as $key => $option) {
+                $shuffledOptions[] = $option['text'];
+                if ($option['originalIndex'] === $correctAnswerOriginalIndex) {
+                    $newCorrectAnswerIndex = $key;
+                }
             }
-        }
 
-        $questions[] = [
-            'id' => $row['id'],
-            'question' => $row['question'],
-            'options' => $shuffledOptions,
-            'correctAnswer' => $newCorrectAnswerIndex
-        ];
+            $questions[] = [
+                'id' => $row['id'],
+                'question' => $row['question'],
+                'options' => $shuffledOptions,
+                'correctAnswer' => $newCorrectAnswerIndex
+            ];
+        }
     }
 
     // Shuffle the questions array so each student gets a different order
@@ -100,6 +115,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         // Return ALL questions grouped by set (for admin questions list)
         $set_id = (int) ($input['set_id'] ?? 0);
         $conn = getDBConnection();
+        if (!$conn) {
+            echo json_encode([]);
+            exit;
+        }
         $useSetId = hasSetIdColumn($conn);
 
         if ($useSetId && $set_id > 0) {
@@ -111,14 +130,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
 
         $questions = [];
-        while ($row = $result->fetch_assoc()) {
-            $questions[] = [
-                'id' => $row['id'],
-                'set_id' => $row['set_id'] ?? 1,
-                'question' => $row['question'],
-                'options' => [$row['option1'], $row['option2'], $row['option3'], $row['option4']],
-                'correctAnswer' => (int) $row['correct_answer'] - 1,
-            ];
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $questions[] = [
+                    'id' => $row['id'],
+                    'set_id' => $row['set_id'] ?? 1,
+                    'question' => $row['question'],
+                    'options' => [$row['option1'], $row['option2'], $row['option3'], $row['option4']],
+                    'correctAnswer' => (int) $row['correct_answer'] - 1,
+                ];
+            }
         }
         echo json_encode($questions);
         $conn->close();
@@ -137,104 +158,119 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
 
         $conn = getDBConnection();
-        $useSetId = hasSetIdColumn($conn);
-        $activeSetId = $useSetId ? getActiveSetId($conn) : 1;
-        $set_id = (int) ($input['set_id'] ?? $activeSetId);
+        if ($conn) {
+            $useSetId = hasSetIdColumn($conn);
+            $activeSetId = $useSetId ? getActiveSetId($conn) : 1;
+            $set_id = (int) ($input['set_id'] ?? $activeSetId);
 
-        if ($useSetId) {
-            $stmt = $conn->prepare("INSERT INTO questions (question, option1, option2, option3, option4, correct_answer, set_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("sssssii", $question, $option1, $option2, $option3, $option4, $correct_answer, $set_id);
-        } else {
-            $stmt = $conn->prepare("INSERT INTO questions (question, option1, option2, option3, option4, correct_answer) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("sssssi", $question, $option1, $option2, $option3, $option4, $correct_answer);
+            if ($useSetId) {
+                $stmt = $conn->prepare("INSERT INTO questions (question, option1, option2, option3, option4, correct_answer, set_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                if ($stmt) {
+                    $stmt->bind_param("sssssii", $question, $option1, $option2, $option3, $option4, $correct_answer, $set_id);
+                    if ($stmt->execute()) {
+                        echo json_encode(['success' => true]);
+                    } else {
+                        echo json_encode(['success' => false, 'message' => 'Failed to add question']);
+                    }
+                    $stmt->close();
+                }
+            } else {
+                $stmt = $conn->prepare("INSERT INTO questions (question, option1, option2, option3, option4, correct_answer) VALUES (?, ?, ?, ?, ?, ?)");
+                if ($stmt) {
+                    $stmt->bind_param("sssssi", $question, $option1, $option2, $option3, $option4, $correct_answer);
+                    if ($stmt->execute()) {
+                        echo json_encode(['success' => true]);
+                    } else {
+                        echo json_encode(['success' => false, 'message' => 'Failed to add question']);
+                    }
+                    $stmt->close();
+                }
+            }
+            $conn->close();
         }
-
-        if ($stmt->execute()) {
-            echo json_encode(['success' => true]);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Failed to add question']);
-        }
-
-        $stmt->close();
-        $conn->close();
 
     } elseif ($action === 'bulk_add') {
-        $questions = $input['questions'] ?? [];
+        $questions_arr = $input['questions'] ?? [];
         $set_id = (int) ($input['set_id'] ?? 0);
 
-        if (empty($questions) || !is_array($questions)) {
+        if (empty($questions_arr) || !is_array($questions_arr)) {
             echo json_encode(['success' => false, 'message' => 'Invalid questions format']);
             exit;
         }
 
         $conn = getDBConnection();
-        $useSetId = hasSetIdColumn($conn);
-        if ($set_id === 0) {
-            $set_id = $useSetId ? getActiveSetId($conn) : 1;
-        }
-
-        $inserted = 0;
-        $errors = [];
-
-        foreach ($questions as $q) {
-            $question = $q['question'] ?? '';
-            $option1 = $q['options'][0] ?? '';
-            $option2 = $q['options'][1] ?? '';
-            $option3 = $q['options'][2] ?? '';
-            $option4 = $q['options'][3] ?? '';
-            $correct_answer = (isset($q['correctAnswer']) ? intval($q['correctAnswer']) + 1 : 1);
-
-            if (empty($question) || empty($option1) || empty($option2) || empty($option3) || empty($option4)) {
-                $errors[] = "Skipped invalid question: " . substr($question, 0, 50);
-                continue;
+        if ($conn) {
+            $useSetId = hasSetIdColumn($conn);
+            if ($set_id === 0) {
+                $set_id = $useSetId ? getActiveSetId($conn) : 1;
             }
 
-            if ($useSetId) {
-                $stmt = $conn->prepare("INSERT INTO questions (question, option1, option2, option3, option4, correct_answer, set_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
-                if (!$stmt) {
-                    $errors[] = "Prepare error: " . $conn->error;
+            $inserted = 0;
+            $errors = [];
+
+            foreach ($questions_arr as $q) {
+                $question = $q['question'] ?? '';
+                $option1 = $q['options'][0] ?? '';
+                $option2 = $q['options'][1] ?? '';
+                $option3 = $q['options'][2] ?? '';
+                $option4 = $q['options'][3] ?? '';
+                $correct_answer = (isset($q['correctAnswer']) ? intval($q['correctAnswer']) + 1 : 1);
+
+                if (empty($question) || empty($option1) || empty($option2) || empty($option3) || empty($option4)) {
+                    $errors[] = "Skipped invalid question: " . substr($question, 0, 50);
                     continue;
                 }
-                $stmt->bind_param("sssssii", $question, $option1, $option2, $option3, $option4, $correct_answer, $set_id);
-            } else {
-                $stmt = $conn->prepare("INSERT INTO questions (question, option1, option2, option3, option4, correct_answer) VALUES (?, ?, ?, ?, ?, ?)");
-                if (!$stmt) {
-                    $errors[] = "Prepare error: " . $conn->error;
-                    continue;
+
+                if ($useSetId) {
+                    $stmt = $conn->prepare("INSERT INTO questions (question, option1, option2, option3, option4, correct_answer, set_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                    if (!$stmt) {
+                        $errors[] = "Prepare error: " . $conn->error;
+                        continue;
+                    }
+                    $stmt->bind_param("sssssii", $question, $option1, $option2, $option3, $option4, $correct_answer, $set_id);
+                } else {
+                    $stmt = $conn->prepare("INSERT INTO questions (question, option1, option2, option3, option4, correct_answer) VALUES (?, ?, ?, ?, ?, ?)");
+                    if (!$stmt) {
+                        $errors[] = "Prepare error: " . $conn->error;
+                        continue;
+                    }
+                    $stmt->bind_param("sssssi", $question, $option1, $option2, $option3, $option4, $correct_answer);
                 }
-                $stmt->bind_param("sssssi", $question, $option1, $option2, $option3, $option4, $correct_answer);
+
+                if ($stmt->execute()) {
+                    $inserted++;
+                } else {
+                    $errors[] = "Failed to insert: " . substr($question, 0, 50);
+                }
+                $stmt->close();
             }
 
-            if ($stmt->execute()) {
-                $inserted++;
+            $conn->close();
+
+            if ($inserted > 0) {
+                echo json_encode(['success' => true, 'count' => $inserted, 'errors' => $errors]);
             } else {
-                $errors[] = "Failed to insert: " . substr($question, 0, 50);
+                echo json_encode(['success' => false, 'message' => 'No questions were imported', 'errors' => $errors]);
             }
-            $stmt->close();
-        }
-
-        $conn->close();
-
-        if ($inserted > 0) {
-            echo json_encode(['success' => true, 'count' => $inserted, 'errors' => $errors]);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'No questions were imported', 'errors' => $errors]);
         }
 
     } elseif ($action === 'delete') {
         $id = $input['id'] ?? 0;
         $conn = getDBConnection();
-        $stmt = $conn->prepare("DELETE FROM questions WHERE id = ?");
-        $stmt->bind_param("i", $id);
+        if ($conn) {
+            $stmt = $conn->prepare("DELETE FROM questions WHERE id = ?");
+            if ($stmt) {
+                $stmt->bind_param("i", $id);
 
-        if ($stmt->execute()) {
-            echo json_encode(['success' => true]);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Failed to delete question']);
+                if ($stmt->execute()) {
+                    echo json_encode(['success' => true]);
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'Failed to delete question']);
+                }
+                $stmt->close();
+            }
+            $conn->close();
         }
-
-        $stmt->close();
-        $conn->close();
 
     } elseif ($action === 'bulk_delete') {
         $ids = isset($input['ids']) ? array_map('intval', (array) $input['ids']) : [];
@@ -244,42 +280,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
 
         $conn = getDBConnection();
-        $placeholders = implode(',', array_fill(0, count($ids), '?'));
-        $types = str_repeat('i', count($ids));
+        if ($conn) {
+            $placeholders = implode(',', array_fill(0, count($ids), '?'));
+            $types = str_repeat('i', count($ids));
 
-        $stmt = $conn->prepare("DELETE FROM questions WHERE id IN ($placeholders)");
-        $stmt->bind_param($types, ...$ids);
+            $stmt = $conn->prepare("DELETE FROM questions WHERE id IN ($placeholders)");
+            if ($stmt) {
+                $stmt->bind_param($types, ...$ids);
 
-        if ($stmt->execute()) {
-            $count = isset($stmt->affected_rows) ? $stmt->affected_rows : count($ids);
-            echo json_encode(['success' => true, 'count' => $count]);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Failed to delete questions']);
+                if ($stmt->execute()) {
+                    $count = isset($stmt->affected_rows) ? $stmt->affected_rows : count($ids);
+                    echo json_encode(['success' => true, 'count' => $count]);
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'Failed to delete questions']);
+                }
+                $stmt->close();
+            }
+            $conn->close();
         }
-
-        $stmt->close();
-        $conn->close();
 
     } elseif ($action === 'clear_all') {
         $set_id = (int) ($input['set_id'] ?? 0);
         $conn = getDBConnection();
-        $useSetId = hasSetIdColumn($conn);
+        if ($conn) {
+            $useSetId = hasSetIdColumn($conn);
 
-        if ($useSetId && $set_id > 0) {
-            $stmt = $conn->prepare("DELETE FROM questions WHERE set_id = ?");
-            $stmt->bind_param("i", $set_id);
-        } else {
-            $stmt = $conn->prepare("DELETE FROM questions");
+            if ($useSetId && $set_id > 0) {
+                $stmt = $conn->prepare("DELETE FROM questions WHERE set_id = ?");
+                if ($stmt) {
+                    $stmt->bind_param("i", $set_id);
+                }
+            } else {
+                $stmt = $conn->prepare("DELETE FROM questions");
+            }
+
+            if ($stmt && $stmt->execute()) {
+                echo json_encode(['success' => true]);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Failed to clear questions']);
+            }
+
+            if ($stmt)
+                $stmt->close();
+            $conn->close();
         }
-
-        if ($stmt->execute()) {
-            echo json_encode(['success' => true]);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Failed to clear questions']);
-        }
-
-        $stmt->close();
-        $conn->close();
 
     } elseif ($action === 'update') {
         $id = $input['id'] ?? 0;
@@ -296,17 +340,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
 
         $conn = getDBConnection();
-        $stmt = $conn->prepare("UPDATE questions SET question = ?, option1 = ?, option2 = ?, option3 = ?, option4 = ?, correct_answer = ? WHERE id = ?");
-        $stmt->bind_param("sssssii", $question, $option1, $option2, $option3, $option4, $correct_answer, $id);
+        if ($conn) {
+            $stmt = $conn->prepare("UPDATE questions SET question = ?, option1 = ?, option2 = ?, option3 = ?, option4 = ?, correct_answer = ? WHERE id = ?");
+            if ($stmt) {
+                $stmt->bind_param("sssssii", $question, $option1, $option2, $option3, $option4, $correct_answer, $id);
 
-        if ($stmt->execute()) {
-            echo json_encode(['success' => true]);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Failed to update question']);
+                if ($stmt->execute()) {
+                    echo json_encode(['success' => true]);
+                } else {
+                    echo json_encode(['success' => false, 'message' => 'Failed to update question']);
+                }
+                $stmt->close();
+            }
+            $conn->close();
         }
-
-        $stmt->close();
-        $conn->close();
     }
 }
-?>

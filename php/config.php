@@ -212,6 +212,31 @@ function getDBConnection()
     }
 }
 
+/**
+ * Normalizes SQL for different database engines (MySQL vs SQLite)
+ */
+function normalizeSQL($sql)
+{
+    $app_env = $_ENV['APP_ENV'] ?? 'live';
+    $engine = $_ENV['DB_ENGINE'] ?? ($app_env === 'dev' ? 'sqlite' : 'mysql');
+
+    if ($engine === 'sqlite') {
+        $sql = str_replace('INSERT OR REPLACE', 'INSERT OR REPLACE', $sql); // Already SQLite style
+        $sql = str_replace('AUTO_INCREMENT', 'AUTOINCREMENT', $sql);
+        $sql = str_replace('UNSIGNED', '', $sql);
+        $sql = preg_replace('/INT\(\d+\)/', 'INTEGER', $sql);
+        $sql = preg_replace('/\bINT\b/', 'INTEGER', $sql);
+        $sql = str_replace('TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP', 'DATETIME DEFAULT CURRENT_TIMESTAMP', $sql);
+    } else {
+        // Normalize from SQLite-style to MySQL
+        $sql = str_replace('INSERT OR REPLACE', 'REPLACE INTO', $sql);
+        $sql = str_replace('AUTOINCREMENT', 'AUTO_INCREMENT', $sql);
+        $sql = str_replace('INTEGER PRIMARY KEY AUTO_INCREMENT', 'INT NOT NULL AUTO_INCREMENT PRIMARY KEY', $sql);
+        $sql = str_replace('INTEGER PRIMARY KEY', 'INT NOT NULL AUTO_INCREMENT PRIMARY KEY', $sql);
+    }
+    return $sql;
+}
+
 // Create tables if they don't exist
 function createTables()
 {
@@ -219,22 +244,8 @@ function createTables()
     if (!$conn)
         return;
 
-    $engine = $_ENV['DB_ENGINE'] ?? 'mysql';
-
-    // Helper to normalize SQL for SQLite
-    $normalize = function ($sql) use ($engine) {
-        if ($engine === 'sqlite') {
-            $sql = str_replace('AUTO_INCREMENT', 'AUTOINCREMENT', $sql);
-            $sql = str_replace('UNSIGNED', '', $sql);
-            $sql = preg_replace('/INT\(\d+\)/', 'INTEGER', $sql);
-            $sql = str_replace('TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP', 'DATETIME DEFAULT CURRENT_TIMESTAMP', $sql);
-            // Remove foreign keys if troubleshooting in SQLite or just let them be if supported
-        }
-        return $sql;
-    };
-
     // Students table
-    $sql = $normalize("CREATE TABLE IF NOT EXISTS students (
+    $sql = normalizeSQL("CREATE TABLE IF NOT EXISTS students (
         id INT(6) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(100) NOT NULL,
         email VARCHAR(100) NOT NULL UNIQUE,
@@ -244,7 +255,7 @@ function createTables()
     $conn->query($sql);
 
     // Questions table
-    $sql = $normalize("CREATE TABLE IF NOT EXISTS questions (
+    $sql = normalizeSQL("CREATE TABLE IF NOT EXISTS questions (
         id INT(6) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         question TEXT NOT NULL,
         option1 VARCHAR(255) NOT NULL,
@@ -256,7 +267,7 @@ function createTables()
     $conn->query($sql);
 
     // Results table
-    $sql = $normalize("CREATE TABLE IF NOT EXISTS results (
+    $sql = normalizeSQL("CREATE TABLE IF NOT EXISTS results (
         id INT(6) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         student_id INT(6) UNSIGNED,
         score INT(3) NOT NULL,
@@ -269,7 +280,7 @@ function createTables()
     $conn->query($sql);
 
     // Settings table
-    $sql = $normalize("CREATE TABLE IF NOT EXISTS settings (
+    $sql = normalizeSQL("CREATE TABLE IF NOT EXISTS settings (
         id INT(1) PRIMARY KEY DEFAULT 1,
         interview_time_minutes INT(3) NOT NULL DEFAULT 30,
         exam_status BOOLEAN NOT NULL DEFAULT TRUE,
@@ -284,4 +295,3 @@ function createTables()
 if (PHP_SAPI !== 'cli') {
     createTables();
 }
-?>

@@ -1,6 +1,15 @@
 <?php
+// Start output buffering to prevent any accidental output
+ob_start();
+
+// Suppress PHP warnings/notices that might corrupt JSON output
+error_reporting(E_ERROR | E_PARSE);
+
 require_once 'config.php';
 session_start();
+
+// Clean any previous output
+ob_clean();
 
 header('Content-Type: application/json');
 
@@ -32,24 +41,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $conn = getDBConnection();
-
-        // First, get the student's email and phone number
-        $student_stmt = $conn->prepare("SELECT email, phone FROM students WHERE id = ?");
-        $student_stmt->bind_param("i", $student_id);
-        $student_stmt->execute();
-        $student_result = $student_stmt->get_result();
-
-        if ($student_result->num_rows === 0) {
-            echo json_encode(['success' => false, 'message' => 'Student not found']);
-            $student_stmt->close();
-            $conn->close();
+        if (!$conn) {
+            echo json_encode(['success' => false, 'message' => 'Database connection failed']);
             exit;
         }
 
-        $student_row = $student_result->fetch_assoc();
-        $student_email = $student_row['email'];
-        $student_phone = $student_row['phone'];
-        $student_stmt->close();
+        // First, get the student's email and phone number
+        $student_stmt = $conn->prepare("SELECT email, phone FROM students WHERE id = ?");
+        if ($student_stmt) {
+            $student_stmt->bind_param("i", $student_id);
+            $student_stmt->execute();
+            $student_result = $student_stmt->get_result();
+
+            if ($student_result->num_rows === 0) {
+                echo json_encode(['success' => false, 'message' => 'Student not found']);
+                $student_stmt->close();
+                $conn->close();
+                exit;
+            }
+
+            $student_row = $student_result->fetch_assoc();
+            $student_email = $student_row['email'];
+            $student_phone = $student_row['phone'];
+            $student_stmt->close();
+        }
 
         // Check if this student already submitted results (same student_id)
         $check_stmt = $conn->prepare(
@@ -57,45 +72,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
              WHERE r.student_id = ? 
              LIMIT 1"
         );
-        $check_stmt->bind_param("i", $student_id);
-        $check_stmt->execute();
-        $check_result = $check_stmt->get_result();
+        if ($check_stmt) {
+            $check_stmt->bind_param("i", $student_id);
+            $check_stmt->execute();
+            $check_result = $check_stmt->get_result();
 
-        if ($check_result->num_rows > 0) {
-            // Update existing result (allow retakes)
-            $check_stmt->close();
-            $update_stmt = $conn->prepare(
-                "UPDATE results SET score = ?, total_questions = ?, percentage = ?, answers = ?, completion_date = CURRENT_TIMESTAMP 
-                 WHERE student_id = ?"
-            );
-            $update_stmt->bind_param("iidsi", $score, $total_questions, $percentage, $answers, $student_id);
+            if ($check_result && $check_result->num_rows > 0) {
+                // Update existing result (allow retakes)
+                $check_stmt->close();
+                $update_stmt = $conn->prepare(
+                    "UPDATE results SET score = ?, total_questions = ?, percentage = ?, answers = ?, completion_date = CURRENT_TIMESTAMP 
+                     WHERE student_id = ?"
+                );
+                if ($update_stmt) {
+                    $update_stmt->bind_param("iidsi", $score, $total_questions, $percentage, $answers, $student_id);
 
-            if ($update_stmt->execute()) {
-                echo json_encode(['success' => true, 'message' => 'Result updated successfully']);
-            } else {
-                $error = $conn->error ?: 'Unknown error';
-                error_log("Results update error: " . $error);
-                echo json_encode(['success' => false, 'message' => 'Failed to update results: ' . $error]);
+                    if ($update_stmt->execute()) {
+                        echo json_encode(['success' => true, 'message' => 'Result updated successfully']);
+                    } else {
+                        $error = $conn->error ?: 'Unknown error';
+                        error_log("Results update error: " . $error);
+                        echo json_encode(['success' => false, 'message' => 'Failed to update results: ' . $error]);
+                    }
+                    $update_stmt->close();
+                }
+                $conn->close();
+                exit;
             }
-            $update_stmt->close();
-            $conn->close();
-            exit;
+            $check_stmt->close();
         }
-        $check_stmt->close();
 
         // Insert the result
         $stmt = $conn->prepare("INSERT INTO results (student_id, score, total_questions, percentage, answers) VALUES (?, ?, ?, ?, ?)");
-        $stmt->bind_param("iiids", $student_id, $score, $total_questions, $percentage, $answers);
+        if ($stmt) {
+            $stmt->bind_param("iiids", $student_id, $score, $total_questions, $percentage, $answers);
 
-        if ($stmt->execute()) {
-            echo json_encode(['success' => true, 'message' => 'Result saved successfully']);
-        } else {
-            $error = $conn->error ?: 'Unknown error';
-            error_log("Results save error: " . $error);
-            echo json_encode(['success' => false, 'message' => 'Failed to save results: ' . $error]);
+            if ($stmt->execute()) {
+                echo json_encode(['success' => true, 'message' => 'Result saved successfully']);
+            } else {
+                $error = $conn->error ?: 'Unknown error';
+                error_log("Results save error: " . $error);
+                echo json_encode(['success' => false, 'message' => 'Failed to save results: ' . $error]);
+            }
+            $stmt->close();
         }
-
-        $stmt->close();
         $conn->close();
 
     } elseif ($action === 'get_all') {
@@ -108,6 +128,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $sort_direction = $sort_direction === 'asc' ? 'asc' : 'desc';
 
         $conn = getDBConnection();
+        if (!$conn) {
+            echo json_encode([]);
+            exit;
+        }
         $sql = "
             SELECT s.id as student_id, s.name, s.email, s.phone, 
                    r.id as result_id, r.score, r.total_questions, r.percentage, 
@@ -118,10 +142,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ";
 
         $result = $conn->query($sql);
-
         $results = [];
-        while ($row = $result->fetch_assoc()) {
-            $results[] = $row;
+        if ($result) {
+            while ($row = $result->fetch_assoc()) {
+                $results[] = $row;
+            }
         }
 
         echo json_encode($results);
@@ -136,6 +161,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $conn = getDBConnection();
+        if (!$conn) {
+            echo json_encode(['success' => false, 'message' => 'Database connection failed']);
+            exit;
+        }
 
         // Get student info + result
         $stmt = $conn->prepare("
@@ -146,10 +175,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             WHERE r.student_id = ?
             LIMIT 1
         ");
+        if (!$stmt) {
+            echo json_encode(['success' => false, 'message' => 'Database error: ' . $conn->error]);
+            $conn->close();
+            exit;
+        }
+
         $stmt->bind_param("i", $student_id);
+        $stmt->execute();
         $result = $stmt->get_result();
 
-        if ($result->num_rows === 0) {
+        if (!$result || $result->num_rows === 0) {
             echo json_encode(['success' => false, 'message' => 'Result not found']);
             $stmt->close();
             $conn->close();
@@ -186,8 +222,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $questions = [];
-        while ($q = $qResult->fetch_assoc()) {
-            $questions[] = $q;
+        if ($qResult) {
+            while ($q = $qResult->fetch_assoc()) {
+                $questions[] = $q;
+            }
         }
 
         $details = [];
@@ -232,57 +270,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $conn = getDBConnection();
-        $conn->begin_transaction();
+        if ($conn) {
+            $conn->begin_transaction();
 
-        try {
-            // Delete result first (due to FK)
-            $stmt1 = $conn->prepare("DELETE FROM results WHERE student_id = ?");
-            $stmt1->bind_param("i", $student_id);
-            $stmt1->execute();
+            try {
+                // Delete result first (due to FK)
+                $stmt1 = $conn->prepare("DELETE FROM results WHERE student_id = ?");
+                if ($stmt1) {
+                    $stmt1->bind_param("i", $student_id);
+                    $stmt1->execute();
+                    $stmt1->close();
+                }
 
-            // Delete student
-            $stmt2 = $conn->prepare("DELETE FROM students WHERE id = ?");
-            $stmt2->bind_param("i", $student_id);
-            $stmt2->execute();
+                // Delete student
+                $stmt2 = $conn->prepare("DELETE FROM students WHERE id = ?");
+                if ($stmt2) {
+                    $stmt2->bind_param("i", $student_id);
+                    $stmt2->execute();
+                    $stmt2->close();
+                }
 
-            $conn->commit();
-            echo json_encode(['success' => true, 'message' => 'Result deleted successfully']);
-        } catch (Exception $e) {
-            $conn->rollback();
-            echo json_encode(['success' => false, 'message' => 'Error deleting result: ' . $e->getMessage()]);
+                $conn->commit();
+                echo json_encode(['success' => true, 'message' => 'Result deleted successfully']);
+            } catch (Exception $e) {
+                $conn->rollback();
+                echo json_encode(['success' => false, 'message' => 'Error deleting result: ' . $e->getMessage()]);
+            }
+            $conn->close();
         }
-        $conn->close();
 
     } elseif ($action === 'clear_all') {
         $conn = getDBConnection();
-        $engine = $_ENV['DB_ENGINE'] ?? 'mysql';
+        if ($conn) {
+            $engine = $_ENV['DB_ENGINE'] ?? 'mysql';
 
-        $conn->begin_transaction();
+            $conn->begin_transaction();
 
-        try {
-            $stmt1 = $conn->prepare("DELETE FROM results");
-            $stmt1->execute();
+            try {
+                $conn->query("DELETE FROM results");
+                $conn->query("DELETE FROM students");
 
-            $stmt2 = $conn->prepare("DELETE FROM students");
-            $stmt2->execute();
+                if ($engine === 'sqlite') {
+                    $conn->query("DELETE FROM sqlite_sequence WHERE name='results'");
+                    $conn->query("DELETE FROM sqlite_sequence WHERE name='students'");
+                } else {
+                    $conn->query("ALTER TABLE results AUTO_INCREMENT = 1");
+                    $conn->query("ALTER TABLE students AUTO_INCREMENT = 1");
+                }
 
-            if ($engine === 'sqlite') {
-                $conn->query("DELETE FROM sqlite_sequence WHERE name='results'");
-                $conn->query("DELETE FROM sqlite_sequence WHERE name='students'");
-            } else {
-                $conn->query("ALTER TABLE results AUTO_INCREMENT = 1");
-                $conn->query("ALTER TABLE students AUTO_INCREMENT = 1");
+                $conn->commit();
+                echo json_encode(['success' => true, 'message' => 'All results cleared successfully']);
+
+            } catch (Exception $e) {
+                $conn->rollback();
+                echo json_encode(['success' => false, 'message' => 'Error clearing results: ' . $e->getMessage()]);
             }
 
-            $conn->commit();
-            echo json_encode(['success' => true, 'message' => 'All results cleared successfully']);
-
-        } catch (Exception $e) {
-            $conn->rollback();
-            echo json_encode(['success' => false, 'message' => 'Error clearing results: ' . $e->getMessage()]);
+            $conn->close();
         }
-
-        $conn->close();
     }
 }
-?>

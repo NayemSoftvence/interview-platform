@@ -1,7 +1,9 @@
 <?php
+ob_start();
 header('Content-Type: application/json');
 require_once 'config.php';
 session_start();
+ob_clean();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
@@ -48,4 +50,3 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 echo json_encode(['success' => false, 'message' => 'Invalid request']);
-?>
