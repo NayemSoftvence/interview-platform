@@ -1025,10 +1025,16 @@ async function viewResultDetail(studentId) {
             const skipped = data.details.filter(d => d.skipped).length;
 
             html += `
-            <div class="rd-summary-chips">
-                <span class="rd-chip rd-chip-correct">✅ ${correct} Correct</span>
-                <span class="rd-chip rd-chip-wrong">❌ ${wrong} Wrong</span>
-                <span class="rd-chip rd-chip-skip">⏭️ ${skipped} Skipped</span>
+            <div class="rd-summary-chips" style="display:flex; justify-content:space-between; align-items:center;">
+                <div style="display:flex; gap:12px;">
+                    <span class="rd-chip rd-chip-correct">✅ ${correct} Correct</span>
+                    <span class="rd-chip rd-chip-wrong">❌ ${wrong} Wrong</span>
+                    <span class="rd-chip rd-chip-skip">⏭️ ${skipped} Skipped</span>
+                </div>
+                <div class="rd-filter-toggle" style="display:flex; align-items:center; gap:8px; background:#fff; padding:6px 12px; border-radius:10px; border:1px solid #e2e8f0; font-size:0.85rem; font-weight:600; color:#475569; cursor:pointer; user-select:none;" onclick="toggleWrongAnswersOnly(this)">
+                    <input type="checkbox" id="showWrongOnly" style="cursor:pointer;">
+                    <label for="showWrongOnly" style="cursor:pointer; margin-bottom:0;">Show Wrong Only</label>
+                </div>
             </div>
             <div class="rd-questions-list">`;
 
@@ -1096,6 +1102,47 @@ async function viewResultDetail(studentId) {
 function closeResultDetailModal() {
     const modal = document.getElementById('resultDetailModal');
     if (modal) modal.style.display = 'none';
+}
+
+function toggleWrongAnswersOnly(el) {
+    const checkbox = el.querySelector('input') || document.getElementById('showWrongOnly');
+    if (el.tagName !== 'INPUT' && checkbox) {
+        checkbox.checked = !checkbox.checked;
+    }
+    
+    const showOnlyWrong = checkbox.checked;
+    const cards = document.querySelectorAll('.rd-question-card');
+    let hiddenCount = 0;
+    
+    cards.forEach(card => {
+        if (showOnlyWrong) {
+            if (card.classList.contains('rd-q-wrong')) {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+                hiddenCount++;
+            }
+        } else {
+            card.style.display = 'block';
+        }
+    });
+
+    // Update the section title or show message if no wrong answers
+    const emptyMsgId = 'rd-filter-empty-msg';
+    let emptyMsg = document.getElementById(emptyMsgId);
+    
+    if (showOnlyWrong && (cards.length - hiddenCount) === 0) {
+        if (!emptyMsg) {
+            emptyMsg = document.createElement('div');
+            emptyMsg.id = emptyMsgId;
+            emptyMsg.className = 'rd-empty';
+            emptyMsg.textContent = 'No wrong answers to display! 🎉';
+            document.querySelector('.rd-questions-list').appendChild(emptyMsg);
+        }
+        emptyMsg.style.display = 'block';
+    } else if (emptyMsg) {
+        emptyMsg.style.display = 'none';
+    }
 }
 
 // Close modal on overlay click
