@@ -37,7 +37,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $row = $result->fetch_assoc();
             echo json_encode(['success' => true, 'interview_time' => (int) $row['interview_time_minutes'], 'exam_status' => (bool) $row['exam_status']]);
         } else {
-            $conn->query("INSERT OR REPLACE INTO settings (id, interview_time_minutes, exam_status) VALUES (1, 30, 1)");
+            $sql = normalizeSQL("INSERT OR REPLACE INTO settings (id, interview_time_minutes, exam_status) VALUES (1, 30, 1)");
+            $conn->query($sql);
             echo json_encode(['success' => true, 'interview_time' => 30, 'exam_status' => true]);
         }
 
@@ -93,7 +94,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $conn = getDBConnection();
         ensureSettingsColumns($conn);
 
-        $sql = "INSERT OR REPLACE INTO settings (id, interview_time_minutes, exam_status) VALUES (1, ?, ?)";
+        // Ensure row exists
+        $check = $conn->query("SELECT id FROM settings WHERE id = 1");
+        if (!$check || $check->num_rows === 0) {
+            $conn->query(normalizeSQL("INSERT INTO settings (id, interview_time_minutes, exam_status) VALUES (1, 30, 1)"));
+        }
+
+        $sql = "UPDATE settings SET interview_time_minutes = ?, exam_status = ? WHERE id = 1";
         $stmt = $conn->prepare($sql);
         if (!$stmt) {
             echo json_encode(['success' => false, 'message' => 'Database error: ' . $conn->error]);
@@ -122,6 +129,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $conn = getDBConnection();
         ensureSettingsColumns($conn);
+
+        // Ensure row exists before update
+        $check = $conn->query("SELECT id FROM settings WHERE id = 1");
+        if (!$check || $check->num_rows === 0) {
+            $conn->query(normalizeSQL("INSERT INTO settings (id, interview_time_minutes, exam_status) VALUES (1, 30, 1)"));
+        }
 
         $sql = "UPDATE settings SET welcome_title = ?, welcome_description = ?, welcome_instructions = ?, platform_name = ?, header_subtitle = ? WHERE id = 1";
         $stmt = $conn->prepare($sql);
@@ -154,6 +167,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $conn = getDBConnection();
         ensureSettingsColumns($conn);
 
+        // Ensure row exists
+        $check = $conn->query("SELECT id FROM settings WHERE id = 1");
+        if (!$check || $check->num_rows === 0) {
+            $conn->query(normalizeSQL("INSERT INTO settings (id, interview_time_minutes, exam_status) VALUES (1, 30, 1)"));
+        }
+
         $sql = "UPDATE settings SET admin_theme = ? WHERE id = 1";
         $stmt = $conn->prepare($sql);
         if (!$stmt) {
@@ -176,4 +195,3 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 echo json_encode(['success' => false, 'message' => 'Invalid request']);
-?>

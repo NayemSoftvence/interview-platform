@@ -1,6 +1,8 @@
 <?php
+ob_start();
 require_once 'config.php';
 session_start();
+ob_clean();
 
 header('Content-Type: application/json');
 
@@ -10,4 +12,4 @@ if (isset($_SESSION['is_admin']) && $_SESSION['is_admin'] === true) {
 } else {
     echo json_encode(['success' => false, 'is_admin' => false]);
 }
-?>
+
