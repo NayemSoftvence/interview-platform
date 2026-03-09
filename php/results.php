@@ -195,55 +195,79 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $row = $result->fetch_assoc();
         $stmt->close();
 
-        // Parse stored answers (array of selected option indices, 0-based, or -1 for skipped)
+        // Parse stored answers
         $userAnswers = json_decode($row['answers'], true);
         if (!is_array($userAnswers)) {
             $userAnswers = [];
         }
 
-        // Get all questions
-        $settingsResult = $conn->query("SELECT active_question_set_id FROM settings WHERE id = 1");
-        $activeSetId = 1;
-        if ($settingsResult && $settingsResult->num_rows > 0) {
-            $settingsRow = $settingsResult->fetch_assoc();
-            $activeSetId = (int) ($settingsRow['active_question_set_id'] ?? 1);
-        }
-
-        $hasSetId = false;
-        $colCheck = $conn->query("SELECT set_id FROM questions LIMIT 1");
-        if ($colCheck !== false) {
-            $hasSetId = true;
-        }
-
-        if ($hasSetId) {
-            $qResult = $conn->query("SELECT id, question, option1, option2, option3, option4, correct_answer FROM questions WHERE set_id = $activeSetId ORDER BY id ASC");
-        } else {
-            $qResult = $conn->query("SELECT id, question, option1, option2, option3, option4, correct_answer FROM questions ORDER BY id ASC");
-        }
-
-        $questions = [];
-        if ($qResult) {
-            while ($q = $qResult->fetch_assoc()) {
-                $questions[] = $q;
-            }
-        }
-
         $details = [];
-        foreach ($questions as $i => $q) {
-            $userAnswerIdx = isset($userAnswers[$i]) ? (int) $userAnswers[$i] : -1;
-            $correctAnswerIdx = (int) $q['correct_answer'] - 1;
 
-            $options = [$q['option1'], $q['option2'], $q['option3'], $q['option4']];
+        // Detect format: new snapshot format has objects with 'question' key
+        $isNewFormat = !empty($userAnswers) && isset($userAnswers[0]['question']);
 
-            $details[] = [
-                'question_num' => $i + 1,
-                'question' => $q['question'],
-                'options' => $options,
-                'correct_answer_index' => $correctAnswerIdx,
-                'user_answer_index' => $userAnswerIdx,
-                'is_correct' => ($userAnswerIdx >= 0 && $userAnswerIdx === $correctAnswerIdx),
-                'skipped' => ($userAnswerIdx < 0),
-            ];
+        if ($isNewFormat) {
+            // NEW FORMAT: each entry is a full snapshot of what the student saw
+            foreach ($userAnswers as $i => $entry) {
+                $userAnswerIdx = isset($entry['user_answer_index']) ? (int) $entry['user_answer_index'] : -1;
+                $correctAnswerIdx = isset($entry['correct_answer_index']) ? (int) $entry['correct_answer_index'] : -1;
+
+                $details[] = [
+                    'question_num' => $i + 1,
+                    'question' => $entry['question'] ?? 'Unknown',
+                    'options' => $entry['options'] ?? [],
+                    'correct_answer_index' => $correctAnswerIdx,
+                    'user_answer_index' => $userAnswerIdx,
+                    'is_correct' => ($userAnswerIdx >= 0 && $userAnswerIdx === $correctAnswerIdx),
+                    'skipped' => ($userAnswerIdx < 0),
+                ];
+            }
+        } else {
+            // OLD FORMAT (backward compatibility): array of selected option indices
+            // This path is imperfect because shuffle order was not stored
+            $settingsResult = $conn->query("SELECT active_question_set_id FROM settings WHERE id = 1");
+            $activeSetId = 1;
+            if ($settingsResult && $settingsResult->num_rows > 0) {
+                $settingsRow = $settingsResult->fetch_assoc();
+                $activeSetId = (int) ($settingsRow['active_question_set_id'] ?? 1);
+            }
+
+            $hasSetId = false;
+            $colCheck = $conn->query("SELECT set_id FROM questions LIMIT 1");
+            if ($colCheck !== false) {
+                $hasSetId = true;
+            }
+
+            if ($hasSetId) {
+                $qResult = $conn->query("SELECT id, question, option1, option2, option3, option4, correct_answer FROM questions WHERE set_id = $activeSetId ORDER BY id ASC");
+            } else {
+                $qResult = $conn->query("SELECT id, question, option1, option2, option3, option4, correct_answer FROM questions ORDER BY id ASC");
+            }
+
+            $questions = [];
+            if ($qResult) {
+                while ($q = $qResult->fetch_assoc()) {
+                    $questions[] = $q;
+                }
+            }
+
+            foreach ($questions as $i => $q) {
+                $userAnswerIdx = isset($userAnswers[$i]) ? (int) $userAnswers[$i] : -1;
+                $rawCorrect = (int) $q['correct_answer'];
+                $correctAnswerIdx = ($rawCorrect >= 1) ? ($rawCorrect - 1) : $rawCorrect;
+
+                $options = [$q['option1'], $q['option2'], $q['option3'], $q['option4']];
+
+                $details[] = [
+                    'question_num' => $i + 1,
+                    'question' => $q['question'],
+                    'options' => $options,
+                    'correct_answer_index' => $correctAnswerIdx,
+                    'user_answer_index' => $userAnswerIdx,
+                    'is_correct' => ($userAnswerIdx >= 0 && $userAnswerIdx === $correctAnswerIdx),
+                    'skipped' => ($userAnswerIdx < 0),
+                ];
+            }
         }
 
         echo json_encode([
@@ -261,6 +285,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ]);
 
         $conn->close();
+
 
     } elseif ($action === 'delete_individual') {
         $student_id = (int) ($_POST['student_id'] ?? 0);

@@ -645,7 +645,7 @@ async function clearQuestions() {
 
 async function clearResults() {
     showCustomConfirm(
-        'Are you sure you want to clear all student results? This action cannot be undone.',
+        'Are you sure you want to clear all Candidate Results? This action cannot be undone.',
         async () => {
             try {
                 const response = await fetch('php/results.php', {
@@ -895,7 +895,7 @@ async function renderResultsTable() {
         const results = await response.json();
 
         if (!Array.isArray(results) || results.length === 0) {
-            resultsTableContainer.innerHTML = '<p>No student results yet.</p>';
+            resultsTableContainer.innerHTML = '<p>No Candidate Results yet.</p>';
             return;
         }
 
@@ -908,7 +908,7 @@ async function renderResultsTable() {
 
         let tableHTML = `
             <div class="results-header">
-                <h4>Student Results (${results.length} total)</h4>
+                <h4>Candidate Results (${results.length} total)</h4>
                 <button class="btn btn-danger" onclick="clearResults()">Clear All Results</button>
             </div>
             <table class="results-table">
@@ -1031,9 +1031,10 @@ async function viewResultDetail(studentId) {
                     <span class="rd-chip rd-chip-wrong">❌ ${wrong} Wrong</span>
                     <span class="rd-chip rd-chip-skip">⏭️ ${skipped} Skipped</span>
                 </div>
-                <div class="rd-filter-toggle" style="display:flex; align-items:center; gap:8px; background:#fff; padding:6px 12px; border-radius:10px; border:1px solid #e2e8f0; font-size:0.85rem; font-weight:600; color:#475569; cursor:pointer; user-select:none;" onclick="toggleWrongAnswersOnly(this)">
-                    <input type="checkbox" id="showWrongOnly" style="cursor:pointer;">
-                    <label for="showWrongOnly" style="cursor:pointer; margin-bottom:0;">Show Wrong Only</label>
+                <div class="rd-filter-group" style="display:flex; align-items:center; background:#f1f5f9; padding:4px; border-radius:12px; border:1px solid #e2e8f0;">
+                    <button class="rd-filter-btn active" data-filter="all" onclick="filterResultDetails(this, 'all')">All</button>
+                    <button class="rd-filter-btn" data-filter="correct" onclick="filterResultDetails(this, 'correct')">Correct</button>
+                    <button class="rd-filter-btn" data-filter="wrong" onclick="filterResultDetails(this, 'wrong')">Wrong</button>
                 </div>
             </div>
             <div class="rd-questions-list">`;
@@ -1058,13 +1059,13 @@ async function viewResultDetail(studentId) {
                     let badge = '';
                     if (isCorrect && isUserPick) {
                         cls += ' rd-opt-correct-picked';
-                        badge = '<span class="rd-opt-badge rd-opt-badge-correct">Your answer ✓</span>';
+                        badge = '<span class="rd-opt-badge rd-opt-badge-correct">Candidate\'s Answer ✓</span>';
                     } else if (isCorrect) {
                         cls += ' rd-opt-correct';
-                        badge = '<span class="rd-opt-badge rd-opt-badge-correct">Correct answer</span>';
+                        badge = '<span class="rd-opt-badge rd-opt-badge-correct">Correct Answer</span>';
                     } else if (isUserPick) {
                         cls += ' rd-opt-wrong-picked';
-                        badge = '<span class="rd-opt-badge rd-opt-badge-wrong">Your answer ✗</span>';
+                        badge = '<span class="rd-opt-badge rd-opt-badge-wrong">Candidate\'s Answer ✗</span>';
                     }
                     const label = String.fromCharCode(65 + i);
                     html += `<div class="${cls}"><span class="rd-opt-label">${label}</span><span class="rd-opt-text">${escapeHtml(opt)}</span>${badge}</div>`;
@@ -1104,41 +1105,41 @@ function closeResultDetailModal() {
     if (modal) modal.style.display = 'none';
 }
 
-function toggleWrongAnswersOnly(el) {
-    const checkbox = el.querySelector('input') || document.getElementById('showWrongOnly');
-    if (el.tagName !== 'INPUT' && checkbox) {
-        checkbox.checked = !checkbox.checked;
-    }
-    
-    const showOnlyWrong = checkbox.checked;
+function filterResultDetails(btn, type) {
+    // Update button states
+    const container = btn.parentElement;
+    container.querySelectorAll('.rd-filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
     const cards = document.querySelectorAll('.rd-question-card');
-    let hiddenCount = 0;
-    
+    let visibleCount = 0;
+
     cards.forEach(card => {
-        if (showOnlyWrong) {
-            if (card.classList.contains('rd-q-wrong')) {
-                card.style.display = 'block';
-            } else {
-                card.style.display = 'none';
-                hiddenCount++;
-            }
-        } else {
-            card.style.display = 'block';
+        let show = false;
+        if (type === 'all') {
+            show = true;
+        } else if (type === 'correct') {
+            show = card.classList.contains('rd-q-correct');
+        } else if (type === 'wrong') {
+            show = card.classList.contains('rd-q-wrong');
         }
+
+        card.style.display = show ? 'block' : 'none';
+        if (show) visibleCount++;
     });
 
-    // Update the section title or show message if no wrong answers
     const emptyMsgId = 'rd-filter-empty-msg';
     let emptyMsg = document.getElementById(emptyMsgId);
-    
-    if (showOnlyWrong && (cards.length - hiddenCount) === 0) {
+
+    if (visibleCount === 0) {
         if (!emptyMsg) {
             emptyMsg = document.createElement('div');
             emptyMsg.id = emptyMsgId;
             emptyMsg.className = 'rd-empty';
-            emptyMsg.textContent = 'No wrong answers to display! 🎉';
             document.querySelector('.rd-questions-list').appendChild(emptyMsg);
         }
+        emptyMsg.textContent = type === 'wrong' ? 'No wrong answers to display! 🎉' :
+            type === 'correct' ? 'No correct answers yet. 😔' : 'No questions found.';
         emptyMsg.style.display = 'block';
     } else if (emptyMsg) {
         emptyMsg.style.display = 'none';

@@ -63,7 +63,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             shuffle($options);
 
             // Find the new index of the correct answer after shuffling
-            $correctAnswerOriginalIndex = (int) $row['correct_answer'] - 1;
+            // correct_answer in DB is 1-indexed (1=option1, 2=option2, etc.)
+            // But some legacy data may have 0-indexed values
+            $rawCorrect = (int) $row['correct_answer'];
+            $correctAnswerOriginalIndex = ($rawCorrect >= 1) ? ($rawCorrect - 1) : $rawCorrect;
             $newCorrectAnswerIndex = 0;
             $shuffledOptions = [];
 
@@ -137,7 +140,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     'set_id' => $row['set_id'] ?? 1,
                     'question' => $row['question'],
                     'options' => [$row['option1'], $row['option2'], $row['option3'], $row['option4']],
-                    'correctAnswer' => (int) $row['correct_answer'] - 1,
+                    'correctAnswer' => ((int) $row['correct_answer'] >= 1) ? ((int) $row['correct_answer'] - 1) : (int) $row['correct_answer'],
                 ];
             }
         }

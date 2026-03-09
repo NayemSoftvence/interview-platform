@@ -7,21 +7,21 @@
     --primary-dark: #1D4ED8;
     --secondary: #60A5FA;
     --accent: #10B981;
-    
+
     /* Background & Surface */
     --background: #F8FAFC;
     --light: #F1F5F9;
     --lighter: #E2E8F0;
     --border: #CBD5E1;
-    
+
     /* Surface */
     --surface: #FFFFFF;
-    
+
     /* Text Colors */
     --dark: #1E293B;
     --text: #475569;
     --text-light: #64748B;
-    
+
     /* Status Colors */
     --success: #22C55E;
     --warning: #F59E0B;

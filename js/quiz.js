@@ -285,17 +285,25 @@ async function endInterview() {
     window.removeEventListener('blur', handleWindowBlur);
     window.removeEventListener('focus', handleWindowFocus);
 
-    // Calculate score
+    // Calculate score and build detailed answer snapshot
     let score = 0;
-    quizState.userAnswers.forEach((answer, index) => {
-        if (answer === quizState.questions[index].correctAnswer) {
-            score++;
-        }
+    const detailedAnswers = quizState.questions.map((q, index) => {
+        const userPick = quizState.userAnswers[index] !== undefined ? quizState.userAnswers[index] : -1;
+        const isCorrect = (userPick >= 0 && userPick === q.correctAnswer);
+        if (isCorrect) score++;
+
+        return {
+            question_id: q.id,
+            question: q.question,
+            options: q.options,               // already in shuffled order
+            user_answer_index: userPick,       // index within shuffled options
+            correct_answer_index: q.correctAnswer  // index within shuffled options
+        };
     });
 
     const totalQuestions = quizState.questions.length;
     const percentage = parseFloat(((score / totalQuestions) * 100).toFixed(2));
-    const answers = JSON.stringify(quizState.userAnswers);
+    const answers = JSON.stringify(detailedAnswers);
 
     // Display results immediately (before saving to ensure they show)
     const finalScoreEl = document.getElementById('finalScore');

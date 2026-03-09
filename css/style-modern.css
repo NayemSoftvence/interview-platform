@@ -50,7 +50,7 @@ body {
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    max-height: 90vh;
+    max-height: 98vh;
     min-height: 600px;
 }
 
@@ -577,13 +577,15 @@ textarea.form-control {
 .admin-content {
     flex: 1;
     padding: 32px;
+    padding-bottom: 80px;
     overflow-y: auto;
     overflow-x: hidden;
     background: white;
     display: flex;
     flex-direction: column;
     width: 100%;
-    height: calc(100vh - 100px);
+    height: auto;
+    min-height: calc(98vh - 100px);
     position: relative;
 }
 
@@ -800,6 +802,7 @@ textarea.form-control {
 
 .questions-section {
     background: white;
+    padding-bottom: 40px;
 }
 
 .question-item {

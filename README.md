@@ -48,7 +48,7 @@ See `DEPLOYMENT.md` for step-by-step instructions.
 - ✅ Intuitive dashboard with statistics
 - ✅ Add/edit/delete questions
 - ✅ Bulk import questions via JSON
-- ✅ View student results with sorting
+- ✅ View Candidate Results with sorting
 - ✅ Configure interview duration
 - ✅ Enable/disable exam
 - ✅ **NEW**: Customize welcome screen text
