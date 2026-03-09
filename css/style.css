@@ -33,7 +33,7 @@ body {
     overflow: auto;
     display: flex;
     flex-direction: column;
-    max-height: 90vh;
+    max-height: 98vh;
     min-height: 600px;
 }
 
@@ -824,7 +824,8 @@ body {
 
 /* ensure admin-content stretches to match sidebar height */
 .admin-content {
-    height: 100%;
+    height: auto;
+    padding-bottom: 80px;
 }
 
 .admin-screen {
@@ -1330,7 +1331,9 @@ textarea.form-control {
 .questions-section .tab-content.active {
     display: block;
     animation: fadeIn 0.3s ease;
-}/* ===== RESULT DETAIL MODAL (PREMIUM DESIGN) ===== */
+}
+
+/* ===== RESULT DETAIL MODAL (PREMIUM DESIGN) ===== */
 
 .rd-modal-inner {
     max-width: 900px;

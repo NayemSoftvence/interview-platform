@@ -38,6 +38,10 @@ body {
 .container {
     background: #0F172A;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    max-height: 98vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
 /* ===== HEADER STYLES ===== */
@@ -107,6 +111,8 @@ body {
 .admin-content {
     background: #0F172A;
     color: #E2E8F0;
+    padding-bottom: 80px;
+    overflow-y: auto;
 }
 
 .admin-screen h2 {
@@ -409,7 +415,8 @@ a:hover {
     background: #0F172A;
 }
 
-/* Dark Mode Modern Theme - Complete *//* ===== RESULT DETAIL MODAL (PREMIUM DESIGN) ===== */
+/* Dark Mode Modern Theme - Complete */
+/* ===== RESULT DETAIL MODAL (PREMIUM DESIGN) ===== */
 
 .rd-modal-inner {
     max-width: 900px;

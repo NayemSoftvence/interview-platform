@@ -645,7 +645,7 @@ async function clearQuestions() {
 
 async function clearResults() {
     showCustomConfirm(
-        'Are you sure you want to clear all student results? This action cannot be undone.',
+        'Are you sure you want to clear all Candidate Results? This action cannot be undone.',
         async () => {
             try {
                 const response = await fetch('php/results.php', {
@@ -895,7 +895,7 @@ async function renderResultsTable() {
         const results = await response.json();
 
         if (!Array.isArray(results) || results.length === 0) {
-            resultsTableContainer.innerHTML = '<p>No student results yet.</p>';
+            resultsTableContainer.innerHTML = '<p>No Candidate Results yet.</p>';
             return;
         }
 
@@ -908,7 +908,7 @@ async function renderResultsTable() {
 
         let tableHTML = `
             <div class="results-header">
-                <h4>Student Results (${results.length} total)</h4>
+                <h4>Candidate Results (${results.length} total)</h4>
                 <button class="btn btn-danger" onclick="clearResults()">Clear All Results</button>
             </div>
             <table class="results-table">
